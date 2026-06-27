@@ -1,0 +1,7 @@
+File	Description	Use
+CU5.15_EGFP_CC.all_C_sites.genomic.cov20.tsv.gz	All covered C-equivalent sites in the treated group	Background site pool and candidate source
+control.all_C_sites.genomic.cov20.tsv.gz	All covered C-equivalent sites in the mock/control group	Background correction
+CU5.15_EGFP_CC.edited_sites.genomic.cov20.rate005.tsv.gz	Sites with edit_rate >= 0.05 before control correction	Initial editing signal inspection
+CU5.15_EGFP_CC.strong_sites.genomic.cov20.rate05.tsv.gz	Sites with edit_rate >= 0.5 before control correction	Strong editing case inspection
+CU5.15_EGFP_CC.control_corrected.PUF_candidates.tsv.gz	Treated-control corrected candidate C-to-U editing sites	Candidate positive set
+CU5.15_EGFP_CC.high_confidence_candidates.tsv.gz	Strictly filtered candidate editing sites	High-confidence positive set
