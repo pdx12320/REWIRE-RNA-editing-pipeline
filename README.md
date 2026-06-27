@@ -28,6 +28,16 @@ rewire_editing_pipeline_wiki/
     └── CU5.15_EGFP_CC.high_confidence_candidates.tsv.gz
 ```
 
+## Current result
+
+| Category | Count |
+|---|---:|
+| Control-corrected candidate sites | 33,983 |
+| High-confidence candidate sites | 2,955 |
+| High-confidence sites with treated_edit_rate 0.10–0.20 | 2,446 |
+| High-confidence sites with treated_edit_rate 0.20–0.50 | 503 |
+| High-confidence sites with treated_edit_rate ≥0.50 | 6 |
+
 ## Pipeline summary
 
 This workflow extracts transcriptome-wide C-to-U candidate editing sites from RNA-seq data for the REWIRE PUF-APOBEC system.
@@ -35,28 +45,3 @@ This workflow extracts transcriptome-wide C-to-U candidate editing sites from RN
 The workflow starts from SRA accessions, generates STAR-aligned BAM files, scans transcript-oriented C-equivalent sites in GENCODE exons, calculates editing rates, merges replicates at the count level, and performs treated-control correction.
 
 Candidate editing sites are defined by elevated editing in the editor-treated group and low background editing in the matched mock/control group.
-
-## Main outputs
-
-| Output | Description |
-|---|---|
-| `*.all_C_sites.genomic.cov20.tsv.gz` | All covered transcript-oriented C-equivalent sites |
-| `*.edited_sites.genomic.cov20.rate005.tsv.gz` | Sites with editing rate ≥ 0.05 before control correction |
-| `*.strong_sites.genomic.cov20.rate05.tsv.gz` | Sites with editing rate ≥ 0.5 before control correction |
-| `*.control_corrected.PUF_candidates.tsv.gz` | Treated-control corrected candidate C-to-U editing sites |
-| `*.high_confidence_candidates.tsv.gz` | A stricter subset derived from the control-corrected candidate table |
-
-## High-confidence candidate subset
-
-`CU5.15_EGFP_CC.high_confidence_candidates.tsv.gz` is not an independent upstream output. It is generated from `CU5.15_EGFP_CC.control_corrected.PUF_candidates.tsv.gz` using stricter filters:
-
-```text
-treated_edit_rate >= 0.10
-corrected_edit_rate >= 0.10
-control_edit_rate <= 0.02
-fisher_q <= 0.05, if available
-```
-
-## Interpretation
-
-The output sites are treated-control corrected C-to-U candidate editing sites. They should be used as candidate labels for downstream analysis, together with clean background C sites selected from the full `all_C_sites` table.
