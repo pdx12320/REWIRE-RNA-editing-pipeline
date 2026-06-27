@@ -1,0 +1,18 @@
+Step	Parameter	Value
+Reference genome	Genome assembly	GRCh38 primary assembly
+Annotation	Gene annotation	GENCODE v50 primary assembly GTF
+Alignment	Aligner	STAR
+Alignment	Output format	Sorted BAM
+Site scanning	Region	GENCODE exon intervals
+Site scanning	Positive-strand signal	genomic C-to-T
+Site scanning	Negative-strand signal	genomic G-to-A
+Base counting	Minimum base quality	20
+Coverage filter	Minimum total_count	20
+Candidate filter	Minimum treated_edit_rate	0.05
+Candidate filter	Maximum control_edit_rate	0.02
+Candidate filter	Minimum delta_edit_rate	0.05
+Candidate filter	Minimum corrected_edit_rate	0.05
+High-confidence filter	Minimum treated_edit_rate	0.10
+High-confidence filter	Minimum corrected_edit_rate	0.10
+PUF annotation	PUF target	AACGUCUAUA
+PUF annotation	Flanking window	50 nt upstream and downstream
