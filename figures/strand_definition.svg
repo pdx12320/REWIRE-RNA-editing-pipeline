@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620">
+  <defs>
+    <style>
+      .title{font-family:Arial,Helvetica,sans-serif;font-size:30px;font-weight:700;fill:#1f2937;text-anchor:middle}
+      .subtitle{font-family:Arial,Helvetica,sans-serif;font-size:18px;fill:#374151;text-anchor:middle}
+      .label{font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;fill:#111827}
+      .text{font-family:Arial,Helvetica,sans-serif;font-size:18px;fill:#111827}
+      .small{font-family:Arial,Helvetica,sans-serif;font-size:15px;fill:#374151}
+      .base{font-family:Courier New,monospace;font-size:24px;font-weight:700;fill:#111827;text-anchor:middle}
+      .cbox{fill:#dbeafe;stroke:#2563eb;stroke-width:2;rx:10;ry:10}
+      .ebox{fill:#fee2e2;stroke:#dc2626;stroke-width:2;rx:10;ry:10}
+      .panel{fill:#f9fafb;stroke:#9ca3af;stroke-width:2;rx:18;ry:18}
+      .arrow{stroke:#374151;stroke-width:3;fill:none;marker-end:url(#arrowhead)}
+    </style>
+    <marker id="arrowhead" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto">
+      <polygon points="0 0, 12 4, 0 8" fill="#374151"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="620" fill="#ffffff"/>
+  <text x="600" y="48" class="title">Strand-aware Representation of RNA C-to-U Editing</text>
+  <text x="600" y="78" class="subtitle">RNA editing is counted in genomic coordinates after RNA-seq alignment.</text>
+
+  <rect x="70" y="120" width="1060" height="190" class="panel"/>
+  <text x="105" y="160" class="label">Positive-strand transcript</text>
+  <text x="105" y="195" class="text">Transcript C corresponds to genomic C.</text>
+
+  <rect x="240" y="225" width="70" height="48" class="cbox"/>
+  <text x="275" y="257" class="base">C</text>
+  <text x="245" y="293" class="small">genome</text>
+
+  <path d="M320 249 L450 249" class="arrow"/>
+  <text x="385" y="235" class="small" text-anchor="middle">RNA C-to-U</text>
+
+  <rect x="460" y="225" width="70" height="48" class="ebox"/>
+  <text x="495" y="257" class="base">T</text>
+  <text x="450" y="293" class="small">aligned read signal</text>
+
+  <text x="670" y="245" class="text">Count edited reads as genomic</text>
+  <text x="930" y="245" class="label" fill="#dc2626">C→T</text>
+
+  <rect x="70" y="360" width="1060" height="190" class="panel"/>
+  <text x="105" y="400" class="label">Negative-strand transcript</text>
+  <text x="105" y="435" class="text">Transcript C corresponds to genomic G on the opposite strand.</text>
+
+  <rect x="240" y="465" width="70" height="48" class="cbox"/>
+  <text x="275" y="497" class="base">G</text>
+  <text x="245" y="533" class="small">genome</text>
+
+  <path d="M320 489 L450 489" class="arrow"/>
+  <text x="385" y="475" class="small" text-anchor="middle">RNA C-to-U</text>
+
+  <rect x="460" y="465" width="70" height="48" class="ebox"/>
+  <text x="495" y="497" class="base">A</text>
+  <text x="450" y="533" class="small">aligned read signal</text>
+
+  <text x="670" y="485" class="text">Count edited reads as genomic</text>
+  <text x="930" y="485" class="label" fill="#dc2626">G→A</text>
+
+  <text x="600" y="592" class="subtitle">Negative-strand G→A does not mean the editor edits G; it is transcript-level C→U shown in genomic coordinates.</text>
+</svg>
