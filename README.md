@@ -21,6 +21,7 @@ rewire_editing_pipeline_wiki/
 │   ├── sra_to_star_bam_only.sh
 │   ├── all_genomic_c_editing_to_3files.py
 │   ├── combine_treated_control_puf_candidates.py
+│   ├── extract_high_confidence_candidates.py
 │   └── make_wiki_figures.py
 └── results/
     ├── CU5.15_EGFP_CC.control_corrected.PUF_candidates.tsv.gz
@@ -43,7 +44,18 @@ Candidate editing sites are defined by elevated editing in the editor-treated gr
 | `*.edited_sites.genomic.cov20.rate005.tsv.gz` | Sites with editing rate ≥ 0.05 before control correction |
 | `*.strong_sites.genomic.cov20.rate05.tsv.gz` | Sites with editing rate ≥ 0.5 before control correction |
 | `*.control_corrected.PUF_candidates.tsv.gz` | Treated-control corrected candidate C-to-U editing sites |
-| `*.high_confidence_candidates.tsv.gz` | Strictly filtered high-confidence candidate sites |
+| `*.high_confidence_candidates.tsv.gz` | A stricter subset derived from the control-corrected candidate table |
+
+## High-confidence candidate subset
+
+`CU5.15_EGFP_CC.high_confidence_candidates.tsv.gz` is not an independent upstream output. It is generated from `CU5.15_EGFP_CC.control_corrected.PUF_candidates.tsv.gz` using stricter filters:
+
+```text
+treated_edit_rate >= 0.10
+corrected_edit_rate >= 0.10
+control_edit_rate <= 0.02
+fisher_q <= 0.05, if available
+```
 
 ## Interpretation
 
