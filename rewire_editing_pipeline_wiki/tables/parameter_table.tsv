@@ -14,5 +14,5 @@ Candidate filter	Minimum delta_edit_rate	0.05
 Candidate filter	Minimum corrected_edit_rate	0.05
 High-confidence filter	Minimum treated_edit_rate	0.10
 High-confidence filter	Minimum corrected_edit_rate	0.10
+High-confidence filter	Maximum Fisher q	0.05
 PUF annotation	PUF target	AACGUCUAUA
-PUF annotation	Flanking window	50 nt upstream and downstream
