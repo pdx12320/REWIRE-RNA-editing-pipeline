@@ -1,13 +1,2 @@
-Category	Value
-Control-corrected candidate sites	33983
-High-confidence candidate sites	2955
-Candidate sites with treated_edit_rate >= 0.10	5995
-Candidate sites with treated_edit_rate >= 0.20	597
-Candidate sites with treated_edit_rate >= 0.50	6
-High-confidence sites with treated_edit_rate 0.05-0.10	0
-High-confidence sites with treated_edit_rate 0.10-0.20	2446
-High-confidence sites with treated_edit_rate 0.20-0.50	503
-High-confidence sites with treated_edit_rate >=0.50	6
-High-confidence median treated_edit_rate	0.1404
-High-confidence median corrected_edit_rate	0.1400
-High-confidence median treated_total_count	77
+status	value
+retired	NA
