@@ -1,17 +1,30 @@
-# iGEM Wiki material for Model 1
+# iGEM Wiki package — Model 1
 
-This folder contains copy-ready English text and executable code blocks for the REWIRE RNA-editing evidence pipeline.
+This folder contains the copy-ready English material for our **RNA-editing evidence pipeline**. The structure is designed for an iGEM Dry Lab page rather than a journal manuscript.
 
-## Recommended page structure
+## Suggested navigation
 
-1. `Short_summary.md` — concise overview for the Wiki homepage
-2. `01_Rationale.md` — why transcriptome-wide evidence is needed
-3. `Model1_RNA_editing_evidence_pipeline.md` — complete Dry Lab page
-4. `Code_and_commands.md` — reproducibility and code section
-5. `Methods.md` — concise methods text for a formal Wiki section
-6. `Filtering.md` — replicate, depth, strand, and WGS logic
-7. `Interpretation.md` — evidence boundaries and validation needs
-8. `Figure_and_table_plan.md` — Wiki-ready captions, diagrams, and tables
-9. `RESULTS_TEMPLATE.md` — placeholders for final counts and figures
+1. [`Short_summary.md`](Short_summary.md) — homepage or project-overview paragraph
+2. [`01_Rationale.md`](01_Rationale.md) — why Model 1 was needed
+3. [`Model1_RNA_editing_evidence_pipeline.md`](Model1_RNA_editing_evidence_pipeline.md) — main Dry Lab story
+4. [`Code_and_commands.md`](Code_and_commands.md) — executable workflow and reproducibility
+5. [`Filtering.md`](Filtering.md) — strand, replicate, depth, and WGS logic
+6. [`Interpretation.md`](Interpretation.md) — what the evidence can and cannot prove
+7. [`Figure_and_table_plan.md`](Figure_and_table_plan.md) — visual layout and future figure plan
+8. [`RESULTS_TEMPLATE.md`](RESULTS_TEMPLATE.md) — result-page placeholders only
 
-The methods and code are complete. Numerical result files are intentionally not committed until all six libraries have completed the same analysis and passed integrity checks.
+## Main page flow
+
+```text
+Problem
+→ Experimental design
+→ Pipeline overview
+→ Build and debugging
+→ Evidence logic
+→ Wet Lab–Dry Lab connection
+→ Design–Build–Test–Learn
+→ Limitations
+→ Contribution
+```
+
+The main page includes short code blocks and links to the full reproducibility page. Numerical result files, final counts, and result figures are intentionally excluded until all six samples complete the same workflow and pass the same checks.
