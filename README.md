@@ -1,34 +1,30 @@
-# Model 1 — RNA-editing evidence pipeline
+# REWIRE Model 1 — RNA-editing evidence pipeline
 
-This repository contains the reproducible computational workflow used to generate RNA-editing evidence for the REWIRE project. It converts six paired-end RNA-seq libraries into an auditable matrix of transcript-oriented C-to-U candidate sites.
+This repository contains the complete implementation of **Model 1**, the RNA-editing evidence pipeline used in the REWIRE iGEM project.
 
-The repository contains the full workflow, source code, installation notes, troubleshooting records, and text that can be adapted directly to an iGEM Wiki. Numerical result tables are intentionally not committed while the six-sample analysis is still running.
+Model 1 converts six paired-end RNA-seq libraries into an auditable, transcript-oriented evidence matrix for candidate C-to-U editing sites.
+
+## Main links
+
+- **Copy-ready iGEM Wiki page:** [`wiki/Model1_RNA_editing_evidence_pipeline.md`](wiki/Model1_RNA_editing_evidence_pipeline.md)
+- **Editable Wiki figures:** [`wiki/assets/`](wiki/assets/)
+- **Sample manifest:** [`config/samples.tsv`](config/samples.tsv)
+- **Executable scripts:** [`scripts/`](scripts/)
+- **Technical notes:** [`docs/`](docs/)
+
+The Wiki page links back to this README so readers can inspect the code and methodological details directly on GitHub.
+
+---
 
 ## Scientific question
 
-Reporter editing confirms that an engineered editor is active, but it does not establish transcriptome-wide specificity. Model 1 therefore asks:
+Reporter editing demonstrates that REWIRE can act at the designed target, but it does not establish transcriptome-wide specificity. Model 1 therefore asks:
 
-1. Which RNA substitutions are reproducibly detected in editor-treated samples?
-2. Which of those substitutions are consistent with transcript-level C-to-U editing?
-3. Which candidates remain after matched-control, sequencing-depth, strand, and optional genomic-variant filtering?
+1. Which substitutions are reproducibly detected in editor-treated samples?
+2. Which substitutions are consistent with transcript-level C-to-U editing?
+3. Which candidates remain after control, depth, strand, and optional genomic-variant filtering?
 
-## Workflow
-
-```text
-SRA paired-end RNA-seq
-→ FASTQ conversion
-→ STAR two-pass alignment to GRCh38
-→ read-group validation
-→ GATK MarkDuplicates
-→ GATK SplitNCigarReads
-→ coverage-aware parallel REDItools2 calling
-→ union substitution VCF
-→ VEP transcript-strand annotation
-→ transcript-oriented C-to-U interpretation
-→ depth confirmation in all six replicates
-→ treated/control comparison
-→ optional matched HEK293T WGS filtering
-```
+---
 
 ## Dataset
 
@@ -41,104 +37,270 @@ SRA paired-end RNA-seq
 | Control | 2 | CU517_GC_C2 | SRR27885764 |
 | Control | 3 | CU517_GC_C3 | SRR27885763 |
 
-The machine-readable manifest is stored in `config/samples.tsv`.
+---
+
+## Workflow
+
+![Model 1 workflow](wiki/assets/model1_workflow.svg)
+
+```text
+SRA paired-end RNA-seq
+→ FASTQ conversion
+→ STAR two-pass alignment to GRCh38
+→ read-group validation
+→ GATK MarkDuplicates
+→ GATK SplitNCigarReads
+→ coverage-aware parallel REDItools2 calling
+→ union substitution VCF
+→ VEP transcript-strand annotation
+→ transcript-oriented C-to-U interpretation
+→ depth confirmation in all six samples
+→ treated/control comparison
+→ optional matched HEK293T WGS filtering
+```
+
+---
 
 ## Repository layout
 
 ```text
 config/
-  samples.tsv                         fixed sample manifest
-
-docs/
-  INSTALLATION.md                     software and reference setup
-  RUNBOOK.md                          operational notes
-  STEP_BY_STEP.md                     numbered workflow
-  PIPELINE.md                         methodological design
-  OUTPUTS.md                          output schemas
-  TROUBLESHOOTING.md                  deployment errors and fixes
-  LIMITATIONS.md                      interpretation boundaries
+  samples.tsv
 
 scripts/
-  download_sra_fastq.py               SRA download and FASTQ conversion
-  run_star_alignment.py               STAR two-pass alignment
-  run_gatk_preprocessing.py           GATK RNA preprocessing
+  download_sra_fastq.py
+  run_star_alignment.py
+  run_gatk_preprocessing.py
   generate_reditools_coverage_limited.sh
-  run_reditools_all_samples.sh        six-sample REDItools2 runner
-  reditools_union_to_vcf.py           union VCF and candidate BED
-  run_vep_annotation.py               transcript-strand annotation
-  build_candidate_depth_tables.sh     all-replicate depth confirmation
+  run_reditools_all_samples.sh
+  reditools_union_to_vcf.py
+  run_vep_annotation.py
+  build_candidate_depth_tables.sh
   filter_utils.py
   filter_calls.py
-  filter_c_to_u_and_compare.py        final evidence matrix
+  filter_c_to_u_and_compare.py
 
 wiki/
-  Short_summary.md
   Model1_RNA_editing_evidence_pipeline.md
-  Code_and_commands.md
-  Methods.md
-  Filtering.md
-  Interpretation.md
-  Figure_and_table_plan.md
-  RESULTS_TEMPLATE.md
+  assets/
+    model1_workflow.svg
+    strand_orientation.svg
+    evidence_logic.svg
+    filtering_funnel.svg
+    contig_fix.svg
+    wetlab_drylab_loop.svg
+    dbtl.svg
+
+docs/
+  installation, commands, troubleshooting, outputs, and limitations
 
 results/
-  placeholders only; numerical results are not committed yet
+  placeholders only; final numerical results are not committed yet
 ```
 
-## Main methodological decisions
+---
 
-### Strand-aware definition
+## Quick start
 
-A biochemical C-to-U event has two genomic representations:
+Define the shared paths:
+
+```bash
+PROJECT=/data/ydx/igem/CU5.17_EGFP_GC_paper
+REF=/data/ydx/igem/GRCh38.primary_assembly.genome.fa
+STAR_INDEX=/data/ydx/igem/STAR_index
+REDITOOLS=/data/ydx/igem/REDItools2
+MANIFEST=config/samples.tsv
+```
+
+### 1. Download SRA and convert to FASTQ
+
+```bash
+python3 scripts/download_sra_fastq.py \
+  --project "$PROJECT" \
+  --manifest "$MANIFEST" \
+  --threads 16
+```
+
+### 2. STAR alignment
+
+```bash
+python3 scripts/run_star_alignment.py \
+  --project "$PROJECT" \
+  --star-index "$STAR_INDEX" \
+  --manifest "$MANIFEST" \
+  --threads 50
+```
+
+### 3. GATK RNA preprocessing
+
+```bash
+python3 scripts/run_gatk_preprocessing.py \
+  --project "$PROJECT" \
+  --reference "$REF" \
+  --manifest "$MANIFEST" \
+  --java-options=-Xmx16g
+```
+
+### 4. REDItools2
+
+```bash
+conda activate reditools2_py2
+
+nohup bash scripts/run_reditools_all_samples.sh \
+  "$PROJECT" \
+  "$REF" \
+  "$REDITOOLS" \
+  "$CONDA_PREFIX/bin/python" \
+  30 8 8 \
+  > "$PROJECT/logs/reditools.log" 2>&1 &
+```
+
+The last three values are:
+
+```text
+30  MPI processes
+8   simultaneous coverage jobs
+8   compression threads
+```
+
+### 5. Union VCF and BED
+
+```bash
+python3 scripts/reditools_union_to_vcf.py \
+  --manifest "$MANIFEST" \
+  --reditools-dir "$PROJECT/reditools/tables" \
+  --vcf "$PROJECT/vcf/CU5.17_EGFP_GC.REDItools_union.vcf" \
+  --bed "$PROJECT/vcf/CU5.17_EGFP_GC.REDItools_union.bed"
+```
+
+### 6. VEP transcript-strand annotation
+
+```bash
+python3 scripts/run_vep_annotation.py \
+  --project "$PROJECT" \
+  --cache /path/to/vep_cache
+```
+
+### 7. Candidate-site depth in all six samples
+
+```bash
+bash scripts/build_candidate_depth_tables.sh \
+  "$PROJECT" \
+  "$PROJECT/vcf/CU5.17_EGFP_GC.REDItools_union.bed" \
+  "$MANIFEST"
+```
+
+### 8. Final evidence matrix
+
+```bash
+python3 scripts/filter_c_to_u_and_compare.py \
+  --manifest "$MANIFEST" \
+  --reditools-dir "$PROJECT/reditools/tables" \
+  --vep "$PROJECT/vep/CU5.17_EGFP_GC.vep.tsv" \
+  --depth-dir "$PROJECT/candidate_depth" \
+  --output-dir "$PROJECT/final" \
+  --min-treated-reps 3 \
+  --max-control-called-reps 0 \
+  --min-depth-all-reps 20
+```
+
+Optional matched WGS filtering:
+
+```text
+--wgs-vcf /path/to/HEK293T.filtered.vcf.gz
+```
+
+---
+
+## Key methodological decisions
+
+### Strict REDItools2 discovery
+
+```text
+-S       output positions containing observed edits
+-me 20   require at least 20 editing events at a reported position
+-q 20    default minimum mapping quality
+-bq 30   default minimum base quality
+```
+
+`-me 20` is an edited-read threshold, not a total-depth threshold.
+
+### Transcript-oriented C-to-U interpretation
+
+![Strand interpretation](wiki/assets/strand_orientation.svg)
 
 ```text
 positive-strand transcript: genomic C→T
 negative-strand transcript: genomic G→A
 ```
 
-The negative-strand G→A call is the reverse-complement representation of transcript-level C-to-U editing. It is not interpreted as biochemical G editing.
-
 ### Independent depth confirmation
 
-A missing REDItools2 call is not automatically evidence of absence. The candidate coordinate is queried independently in every BAM using base quality 30 and mapping quality 20. This distinguishes an adequately sequenced negative sample from an uncovered site.
+A missing REDItools2 call is interpreted together with independently measured candidate-site depth in every BAM.
 
-### Conservative default evidence rule
+![Evidence logic](wiki/assets/evidence_logic.svg)
 
-The default treatment-specific rule requires:
+### Conservative default rule
+
+![Filtering funnel](wiki/assets/filtering_funnel.svg)
 
 ```text
 called in all three treated replicates
 called in no control replicate
-candidate-site depth ≥20 in every replicate
+candidate-site depth ≥20 in all six samples
 strand consistent with transcript-level C-to-U editing
-absent from an optional matched HEK293T WGS variant set
+absent from the optional matched WGS variant set
 ```
 
-These thresholds are configurable and the full per-sample matrix is retained so alternative definitions can be evaluated without repeating alignment and site calling.
+---
 
-## REDItools2 implementation notes
+## REDItools2 contig-name fix
 
-Parallel REDItools2 requires both a combined coverage file and per-contig coverage files. The repository uses a limited-concurrency coverage generator to reduce disk contention on shared storage.
+GRCh38 supplementary contigs include version suffixes such as `.1` and `.2`. The original temporary-file parser removed these suffixes and caused the final merge to fail.
 
-GRCh38 contigs such as `GL000194.1` and `KI270750.1` include version suffixes as part of their identifiers. The REDItools2 filename parser was patched so only the final `.gz` extension is removed; `.1`, `.2`, and other contig-version suffixes are preserved.
+![Contig parsing fix](wiki/assets/contig_fix.svg)
+
+The corrected parser is:
+
+```python
+pieces = os.path.basename(little_file)[:-3].rsplit("#", 2)
+```
+
+Only the final `.gz` extension is removed; the exact contig identifier is preserved.
+
+---
+
+## Quality-control checks
+
+```bash
+samtools quickcheck -v sample.bam
+gzip -t sample.txt.gz
+tabix -l sample.txt.gz
+zcat sample.txt.gz | head
+```
+
+The workflow also checks read groups, per-sample coverage directories, interval completion, reference ordering, and the presence of tabix indexes.
+
+---
+
+## Wiki figures
+
+All diagrams are stored as editable SVG files under `wiki/assets/`:
+
+- complete workflow;
+- transcript-strand interpretation;
+- depth and replicate evidence logic;
+- evidence filtering funnel;
+- REDItools2 contig parsing fix;
+- Wet Lab–Dry Lab feedback loop;
+- Design–Build–Test–Learn.
+
+They can be downloaded directly from GitHub and uploaded to the iGEM Wiki media system without redrawing.
+
+---
 
 ## Results status
 
-The methods and executable workflow are complete. Numerical result files, final site counts, and result figures will be added only after all six samples finish the same workflow and pass integrity checks. The `results/` directory is protected by `.gitignore` so result artifacts are not committed accidentally.
+The methods, source code, and Wiki figures are included. Numerical result files, final site counts, and result-specific plots are intentionally excluded until all six samples complete the same workflow and pass the same integrity checks.
 
-## iGEM Wiki material
-
-The main copy-ready page is:
-
-- `wiki/Model1_RNA_editing_evidence_pipeline.md`
-
-Exact code blocks are provided in:
-
-- `wiki/Code_and_commands.md`
-
-A short homepage summary and Wiki-ready figure captions are provided in:
-
-- `wiki/Short_summary.md`
-- `wiki/Figure_and_table_plan.md`
-
-The original repository state is preserved on branch `backup-before-paper-pipeline-20260704`.
+The original repository state remains available on branch `backup-before-paper-pipeline-20260704`.
