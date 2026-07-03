@@ -1,22 +1,20 @@
 # Model 1 — RNA-editing Evidence Pipeline
 
-## From RNA-seq reads to evidence for REWIRE activity
+## From six RNA-seq libraries to reproducible evidence for REWIRE activity
 
-### Why did we build Model 1?
+Our REWIRE system recruits a cytidine deaminase to a selected RNA sequence. Editing at the designed reporter shows that the construct can work at the intended target, but it does not answer a second question:
 
-Our REWIRE system recruits a cytidine deaminase to a selected RNA sequence. Editing at the designed reporter can show that the construct is active, but a reporter alone cannot answer an equally important question:
+> **Does REWIRE also produce reproducible C-to-U signals elsewhere in the transcriptome?**
 
-> **Does the editor also produce reproducible C-to-U signals elsewhere in the transcriptome?**
+We built Model 1 to answer this question from experimental RNA-seq data. Instead of labeling every mismatch as an off-target, the pipeline creates a traceable evidence chain. A candidate must be supported by quality-filtered reads, interpreted in the correct transcript orientation, reproduced across treated samples, evaluated at the same coordinate in controls, and separated from possible genomic variation when matched WGS data are available.
 
-We therefore built Model 1 as an evidence-generation pipeline. Instead of treating every RNA-seq mismatch as an off-target, Model 1 asks whether a candidate is supported by high-quality reads, reproduced across treated samples, adequately observed in controls, consistent with transcript orientation, and separable from possible genomic variation.
-
-Model 1 is also the foundation for later sequence models. A machine-learning model is only useful when its training labels are credible; this pipeline creates the evidence from which those labels can be built.
+The full code, parameters, installation notes, and troubleshooting record are available in the [GitHub README](https://github.com/pdx12320/REWIRE-RNA-editing-pipeline#readme).
 
 ---
 
-## Our experimental design
+## Our design
 
-We used three editor-treated RNA-seq libraries and three matched controls.
+We compared three editor-treated RNA-seq libraries with three matched control libraries.
 
 | Condition | Replicate | Sample | SRA accession |
 |---|---:|---|---|
@@ -27,54 +25,21 @@ We used three editor-treated RNA-seq libraries and three matched controls.
 | Control | 2 | CU517_GC_C2 | SRR27885764 |
 | Control | 3 | CU517_GC_C3 | SRR27885763 |
 
-The replicate structure gives Model 1 two kinds of evidence:
-
-- **reproducibility**, because a candidate should not depend on one library;
-- **background context**, because a missing or weak control signal changes how a treated call is interpreted.
-
-<!-- FIGURE 1 PLACEHOLDER
-Six sample cards: T1, T2, T3 on the left and C1, C2, C3 on the right.
-Use one visual style for treated samples and another for controls.
--->
+Replicates test whether a signal is reproducible rather than library-specific. Controls provide background context, but only when the same coordinate has enough sequencing depth to be informative.
 
 ---
 
-## The Model 1 workflow
+## Workflow overview
 
-```text
-Six RNA-seq libraries
-        ↓
-SRA download and FASTQ conversion
-        ↓
-STAR alignment to GRCh38
-        ↓
-GATK RNA preprocessing
-        ↓
-Coverage-aware parallel REDItools2 analysis
-        ↓
-Per-sample substitution tables
-        ↓
-VEP transcript-strand annotation
-        ↓
-Transcript-oriented C-to-U interpretation
-        ↓
-Depth confirmation in all six samples
-        ↓
-Treated/control evidence matrix
-        ↓
-Candidates for validation and downstream modeling
-```
+![Model 1 workflow](assets/model1_workflow.svg)
 
-<!-- FIGURE 2 PLACEHOLDER
-Full-width horizontal workflow.
-Recommended labels: Input, Map, Prepare, Call, Orient, Compare, Validate.
--->
+The workflow separates **discovery** from **interpretation**. REDItools2 first reports quality-supported substitutions. Transcript strand, all-sample depth, treated/control status, and optional genomic variation are then added before a site is considered a Model 1 candidate.
 
 ---
 
-# Stage 1 — Organize the samples
+# Stage 1 — Organize and download the data
 
-The relationship between sample name, condition, replicate number, and SRA accession is stored in one manifest:
+The sample name, condition, replicate number, and SRA accession are stored in one manifest:
 
 ```text
 config/samples.tsv
@@ -90,9 +55,7 @@ CU517_GC_C2	control	2	SRR27885764
 CU517_GC_C3	control	3	SRR27885763
 ```
 
-Keeping this information in a machine-readable file reduces manual sample handling and lets every downstream script use the same treated/control assignment.
-
-The reads are downloaded and converted into paired compressed FASTQ files:
+This prevents treated/control labels from being re-entered manually at different stages.
 
 ```bash
 python3 scripts/download_sra_fastq.py \
@@ -101,13 +64,13 @@ python3 scripts/download_sra_fastq.py \
   --threads 16
 ```
 
-**Checkpoint:** every sample must produce one non-empty read-1 file and one non-empty read-2 file.
+**Checkpoint:** every sample must produce one non-empty read-1 FASTQ and one non-empty read-2 FASTQ.
 
 ---
 
-# Stage 2 — Map the reads
+# Stage 2 — Map reads to GRCh38
 
-We aligned paired-end reads to the GRCh38 primary assembly with STAR in two-pass mode.
+Paired-end reads are aligned to the GRCh38 primary assembly with STAR in two-pass mode.
 
 ```bash
 python3 scripts/run_star_alignment.py \
@@ -117,7 +80,7 @@ python3 scripts/run_star_alignment.py \
   --threads 50
 ```
 
-The STAR command writes coordinate-sorted BAM files and includes read-group information for each sample.
+The alignment writes coordinate-sorted BAM files and sample-level read-group information.
 
 ```bash
 STAR \
@@ -130,21 +93,21 @@ STAR \
   --outSAMattrRGline ID:sample SM:sample PL:ILLUMINA LB:sample PU:sample
 ```
 
-### Why read groups became part of our design
+### Why read groups became a checkpoint
 
-During development, missing read-group metadata caused GATK to fail. We therefore turned read-group presence into a quality-control checkpoint rather than treating it as an invisible software detail.
+During development, missing read-group metadata caused GATK to fail. We therefore validate the BAM header instead of treating read groups as an invisible software detail.
 
 ```bash
 samtools view -H sample.Aligned.sortedByCoord.out.bam | grep '^@RG'
 ```
 
-**Checkpoint:** the BAM must be readable, indexed, and linked to the correct sample through its `@RG` line.
+**Checkpoint:** the BAM must be readable, indexed, and assigned to the correct sample.
 
 ---
 
 # Stage 3 — Prepare RNA alignments
 
-RNA-seq reads often span exon junctions, so we processed each alignment before site calling.
+RNA-seq reads often span exon junctions. Before site calling, each BAM is processed with GATK.
 
 ```bash
 python3 scripts/run_gatk_preprocessing.py \
@@ -154,13 +117,11 @@ python3 scripts/run_gatk_preprocessing.py \
   --java-options=-Xmx16g
 ```
 
-The preprocessing stage performs three operations:
+The stage performs three operations:
 
-1. repair read groups when necessary;
+1. repair read groups when they are missing;
 2. mark PCR duplicates and record duplicate metrics;
 3. run `SplitNCigarReads` on spliced RNA alignments.
-
-Representative command:
 
 ```bash
 gatk SplitNCigarReads \
@@ -169,15 +130,15 @@ gatk SplitNCigarReads \
   -O splitncigarreads.bam
 ```
 
-We mark duplicates rather than silently deleting them. This keeps the decision visible in the BAM flags and preserves the original read evidence for later inspection.
+Duplicates are marked rather than silently removed. Their status remains visible in the BAM flags and metrics.
 
-**Checkpoint:** every SplitNCigarReads BAM is tested with `samtools quickcheck` before entering REDItools2.
+**Checkpoint:** every final BAM is tested with `samtools quickcheck` before entering REDItools2.
 
 ---
 
-# Stage 4 — Build the REDItools2 coverage map
+# Stage 4 — Build a coverage map for parallel analysis
 
-The parallel REDItools2 implementation needs a per-position coverage map. This file is not the final editing result. It is used to divide the genome into computational intervals with more balanced workloads.
+Parallel REDItools2 uses a per-position coverage map to divide the genome into intervals with more balanced workloads. This coverage file is a scheduling input, not the final editing result.
 
 ```bash
 bash scripts/generate_reditools_coverage_limited.sh \
@@ -187,29 +148,27 @@ bash scripts/generate_reditools_coverage_limited.sh \
   8
 ```
 
-The helper script calculates coverage separately for each reference contig:
+The helper calculates coverage separately for each reference contig:
 
 ```bash
 samtools depth -r chromosome sample.splitncigarreads.bam \
   > sample_coverage_directory/chromosome
 ```
 
-### Why we limited the number of coverage jobs
-
-The original helper can launch one background process for every reference contig. On shared storage, this can create many disk-intensive jobs at the same time. We separated the two forms of parallelism:
+The original helper can launch one disk-intensive process for every reference contig. We therefore separated two forms of parallelism:
 
 ```text
 coverage generation: 8 concurrent depth jobs
 REDItools2 analysis: 30 MPI processes
 ```
 
-This retains parallel analysis while reducing avoidable I/O contention.
+This reduces avoidable storage contention without removing MPI parallelism from the main analysis.
 
 ---
 
 # Stage 5 — Call candidate substitutions
 
-Each sample is analyzed separately with the MPI implementation of REDItools2.
+Each sample is analyzed independently, while genomic intervals within the sample are distributed across MPI workers.
 
 ```bash
 nohup bash scripts/run_reditools_all_samples.sh \
@@ -221,7 +180,7 @@ nohup bash scripts/run_reditools_all_samples.sh \
   > "$PROJECT/logs/reditools.log" 2>&1 &
 ```
 
-The main REDItools2 call is:
+The main REDItools2 command is:
 
 ```bash
 mpirun -np 30 python2 parallel_reditools.py \
@@ -239,90 +198,59 @@ mpirun -np 30 python2 parallel_reditools.py \
 |---|---|
 | `-S` | strict mode: only positions with an observed edit are written |
 | `-me 20` | require at least 20 editing events at a reported position |
-| default `-q 20` | remove reads below mapping quality 20 |
-| default `-bq 30` | remove bases below base quality 30 |
+| default `-q 20` | discard reads below mapping quality 20 |
+| default `-bq 30` | discard bases below base quality 30 |
 | `-np 30` | distribute intervals across 30 MPI processes |
-| `-G`, `-D` | supply the complete and per-contig coverage data |
+| `-G`, `-D` | provide complete and per-contig coverage data |
 
-The edited-read threshold is deliberately stringent. It prioritizes strongly supported sites but may miss genuine low-frequency events.
+The edited-read threshold is deliberately stringent. It prioritizes strongly supported positions but can miss low-frequency activity.
 
-For every reported position, REDItools2 records the coordinate, reference base, quality-filtered coverage, A/C/G/T counts, observed substitution, and estimated frequency.
+For every reported position, REDItools2 stores the coordinate, reference base, quality-filtered coverage, A/C/G/T read counts, observed substitution, and estimated frequency.
 
 ---
 
-# Engineering challenge — Preserving GRCh38 contig names
+# Engineering contribution — Preserving GRCh38 contig names
 
-GRCh38 contains supplementary contigs with versioned names such as:
+GRCh38 contains supplementary contigs with versioned identifiers such as `GL000194.1`, `GL000205.2`, and `KI270750.1`. The `.1` and `.2` suffixes are part of the actual reference names.
 
-```text
-GL000194.1
-GL000205.2
-KI270750.1
-```
-
-The `.1` and `.2` suffixes are part of the reference identifiers.
-
-During our first full run, REDItools2 completed the interval computation but failed during output sorting:
+During the first complete run, REDItools2 finished interval computation but failed while sorting the temporary files:
 
 ```text
 ValueError: 'chrGL000009' is not in list
 ```
 
-The original filename parser removed everything after the first dot. This changed:
+![REDItools2 contig parsing fix](assets/contig_fix.svg)
 
-```text
-GL000009.2#100#500.gz
-```
-
-into:
-
-```text
-GL000009
-```
-
-which no longer matched the reference FASTA index.
-
-We replaced the parser with:
+The original parser removed everything after the first dot. We replaced it with:
 
 ```python
 pieces = os.path.basename(little_file)[:-3].rsplit("#", 2)
 ```
 
-This removes only the final `.gz` extension and preserves the complete contig name:
-
-```python
-["GL000009.2", "100", "500"]
-```
-
-<!-- FIGURE 3 PLACEHOLDER
-Before/after debugging diagram:
-GL000009.2 → GL000009 (wrong)
-GL000009.2 → GL000009.2 (correct)
--->
+The new parser removes only the final `.gz` extension and preserves the complete contig identifier and interval coordinates.
 
 ### What we learned
 
-A pipeline can complete hours of biological computation and still fail during file integration. Reference naming and merge logic therefore became explicit parts of our validation process.
+A pipeline can finish hours of biological computation and still fail during output integration. Exact reference names and merge logic therefore became explicit quality-control targets in Model 1.
 
 ---
 
-# Stage 6 — Interpret C-to-U in transcript orientation
+# Stage 6 — Interpret substitutions in transcript orientation
 
-The BAM and REDItools2 tables use genomic coordinates, but RNA editing must be interpreted in transcript orientation.
+RNA editing occurs in transcripts, while the BAM and REDItools2 tables use genomic coordinates.
+
+![Transcript-oriented C-to-U interpretation](assets/strand_orientation.svg)
+
+The rule is:
 
 ```text
-positive-strand transcript:
-transcript C-to-U = genomic C-to-T
+positive-strand transcript: transcript C-to-U appears as genomic C-to-T
+negative-strand transcript: transcript C-to-U appears as genomic G-to-A
 ```
 
-```text
-negative-strand transcript:
-transcript C-to-U = genomic G-to-A
-```
+The negative-strand G-to-A representation does not mean that REWIRE biochemically edits G. It is the reverse-complement representation of transcript-level C-to-U editing.
 
-A genomic G-to-A call on a negative-strand transcript does not mean that the editor biochemically edits G. It is the reverse-complement representation of transcript-level C-to-U editing.
-
-We combine substitutions from all six sample tables into a union VCF and candidate BED:
+We first combine substitutions from all six samples into one union VCF and one candidate BED:
 
 ```bash
 python3 scripts/reditools_union_to_vcf.py \
@@ -332,7 +260,7 @@ python3 scripts/reditools_union_to_vcf.py \
   --bed "$PROJECT/vcf/CU5.17_EGFP_GC.REDItools_union.bed"
 ```
 
-We then annotate transcript strand with offline VEP:
+VEP then supplies transcript orientation:
 
 ```bash
 python3 scripts/run_vep_annotation.py \
@@ -340,27 +268,13 @@ python3 scripts/run_vep_annotation.py \
   --cache "$VEP_CACHE"
 ```
 
-Coordinates with contradictory strand annotations across overlapping transcripts are treated as ambiguous instead of being assigned arbitrarily.
-
-<!-- FIGURE 4 PLACEHOLDER
-Two-panel strand figure:
-+ transcript: C→T
-− transcript: G→A
-Both panels point to “transcript-level C→U”.
--->
+Coordinates with conflicting positive- and negative-strand transcript annotations are treated as ambiguous instead of being assigned arbitrarily.
 
 ---
 
-# Stage 7 — Ask whether every sample had enough evidence
+# Stage 7 — Ask whether every sample was informative
 
-A site absent from a control call table is not automatically a true negative. It may simply have too little coverage.
-
-To separate these cases, we query every union candidate position in every BAM using:
-
-```text
-base quality ≥30
-mapping quality ≥20
-```
+A site absent from a control call table is not automatically a negative observation. The position may simply have insufficient coverage.
 
 ```bash
 bash scripts/build_candidate_depth_tables.sh \
@@ -369,40 +283,28 @@ bash scripts/build_candidate_depth_tables.sh \
   config/samples.tsv
 ```
 
-This produces an independent depth value even when REDItools2 did not report an edit.
-
-### Why a missing call can mean different things
+The independent depth query uses:
 
 ```text
-Control A: no edit call, depth = 125
-Interpretation: the position was observed but did not pass the edit-call rule
+minimum base quality = 30
+minimum mapping quality = 20
 ```
 
-```text
-Control B: no edit call, depth = 0
-Interpretation: the sample provides no evidence about this position
-```
+![Evidence logic](assets/evidence_logic.svg)
 
-Model 1 keeps these two situations separate.
-
-<!-- FIGURE 5 PLACEHOLDER
-Three evidence cards:
-1. treated call + covered control negative;
-2. treated call + uncovered control;
-3. call in only one treated replicate.
--->
+This distinction prevents “not called” from being confused with “not sequenced.”
 
 ---
 
 # Stage 8 — Build the six-sample evidence matrix
 
-The final comparison combines:
+The final comparison integrates:
 
 - REDItools2 call status;
-- VEP transcript orientation;
-- candidate-site depth in every sample;
+- transcript orientation;
+- independent candidate-site depth;
 - treated/control assignment;
-- optional overlap with a matched WGS variant set.
+- optional matched WGS overlap.
 
 ```bash
 python3 scripts/filter_c_to_u_and_compare.py \
@@ -416,90 +318,84 @@ python3 scripts/filter_c_to_u_and_compare.py \
   --min-depth-all-reps 20
 ```
 
-Our conservative default evidence rule is:
+![Model 1 evidence funnel](assets/filtering_funnel.svg)
+
+The conservative default rule requires:
 
 ```text
 called in all three treated replicates
 AND called in no control replicate
-AND candidate-site depth ≥20 in all six samples
+AND candidate-site depth at least 20 in all six samples
 AND consistent with transcript-level C-to-U editing
 AND absent from the optional matched WGS variant set
 ```
 
-The final matrix stores more than a pass/fail result. For each sample, it retains call status, independent depth, REDItools2 depth, edited-read count, and editing frequency. This lets us test alternative thresholds later without rerunning alignment and site calling.
-
-<!-- FIGURE 6 PLACEHOLDER
-Filtering funnel:
-all substitutions → strand-consistent C-to-U → treated reproducibility
-→ control exclusion → all-sample depth → optional WGS exclusion.
-Do not add numerical counts until the complete analysis is available.
--->
+The matrix keeps more than a final yes/no label. For each sample, it stores call status, independent depth, REDItools2 depth, edited-read count, and editing frequency. Alternative thresholds can therefore be tested without rerunning alignment and REDItools2.
 
 ---
 
 # How Model 1 supports the wet lab
 
-Model 1 is not intended to replace experimental validation. It reduces the search space and records why each site was prioritized.
+Model 1 does not replace experimental validation. It reduces the search space and records why each site was prioritized.
 
-## 1. Prioritizing validation targets
+![Wet Lab and Dry Lab feedback loop](assets/wetlab_drylab_loop.svg)
 
-Candidates with reproducible treated support and informative control coverage can be ranked for targeted amplicon sequencing, independent RNA-seq, or another orthogonal assay.
+### Prioritizing validation targets
 
-## 2. Evaluating specificity
+Candidates with reproducible treated support and informative control coverage can be ranked for targeted amplicon sequencing, independent RNA-seq, or another site-specific assay.
 
-The intended reporter site and endogenous candidates can be summarized using the same evidence types: depth, edited-read support, frequency, replicate consistency, and control status.
+### Evaluating specificity
 
-## 3. Creating labels for downstream models
+The intended reporter site and endogenous candidates can be described using the same evidence types: depth, edited-read support, frequency, replicate consistency, and control status.
 
-High-confidence positives and well-covered background positions can become training examples for later sequence models. Model 1 provides the evidence layer; the later model learns patterns from that evidence.
+### Creating labels for downstream models
 
-<!-- FIGURE 7 PLACEHOLDER
-Wet Lab–Dry Lab feedback loop:
-RNA-seq → Model 1 → ranked candidates → targeted validation → improved labels.
--->
+Supported positives and well-covered background positions can become examples for later sequence models. Model 1 provides the evidence layer; the later model learns from that evidence.
 
 ---
 
 # Design–Build–Test–Learn
 
-## Design
+![Design Build Test Learn](assets/dbtl.svg)
 
-We designed a six-sample workflow based on replicate consistency, matched controls, transcript orientation, and all-sample depth.
+### Design
 
-## Build
+We designed a six-sample workflow based on treated reproducibility, matched controls, transcript orientation, and independent all-sample depth.
 
-We combined SRA Toolkit, STAR, GATK, samtools, MPI REDItools2, VEP, and custom Python filters into a modular pipeline.
+### Build
 
-## Test
+We combined SRA Toolkit, STAR, GATK, samtools, MPI REDItools2, VEP, and custom Python filters into a modular workflow.
+
+### Test
 
 We tested BAM readability, read-group presence, coverage generation, interval completion, compressed output integrity, reference ordering, and tabix indexing.
 
-## Learn
+### Learn
 
 Three lessons changed the final design:
 
-1. a missing call is not evidence without enough coverage;
+1. absence of a call is not evidence without sufficient depth;
 2. transcript orientation changes the genomic representation of C-to-U editing;
-3. exact reference-contig names must survive every temporary filename and merge operation.
+3. exact contig identifiers must survive every temporary filename and merge operation.
 
 ---
 
 # Limitations
 
-Model 1 produces computational candidates, not automatically confirmed off-targets.
+Model 1 produces computational RNA-editing candidates, not automatically confirmed off-targets.
 
-RNA-seq mismatches can also arise from:
+RNA-seq mismatches may also arise from:
 
 - genomic variants;
 - alignment ambiguity;
 - sequencing artifacts;
 - endogenous RNA modification;
 - repetitive or low-complexity regions;
-- batch-specific effects.
+- sample- or batch-specific effects.
 
 Matched HEK293T WGS filtering is important for stronger conclusions. Without matched WGS, retained positions should be described as **RNA-derived candidate editing sites**.
 
-The strict edited-read threshold may also miss low-frequency activity. A sensitivity analysis can later examine lower thresholds together with stronger artifact controls.
+The strict edited-read threshold may miss low-frequency activity. A later sensitivity analysis can test lower thresholds together with stronger artifact controls.
 
 High-priority sites still require orthogonal validation.
 
@@ -511,11 +407,13 @@ Model 1 provides:
 
 - a fixed six-sample treated/control manifest;
 - a reproducible RNA-seq-to-evidence workflow;
-- limited-concurrency coverage generation for shared servers;
-- a fix for REDItools2 versioned-contig parsing;
+- limited-concurrency coverage generation for shared storage;
+- a fix for versioned REDItools2 contig parsing;
 - transcript-oriented C-to-U interpretation;
 - independent depth confirmation in every sample;
 - an auditable treated/control evidence matrix;
-- reusable code for future REWIRE constructs.
+- reusable code and figures for future REWIRE datasets.
 
-Complete commands are available in [`Code_and_commands.md`](Code_and_commands.md). Final numerical results and figures will be added only after all six samples finish the same workflow and pass the same checks.
+No numerical result files are included yet. Final counts, result tables, and result-specific figures will be added only after all six samples complete the same workflow and pass the same integrity checks.
+
+For complete implementation details, see the [REWIRE RNA-editing pipeline repository](https://github.com/pdx12320/REWIRE-RNA-editing-pipeline#readme).
