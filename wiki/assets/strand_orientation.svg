@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="620" viewBox="0 0 1500 620" role="img" aria-labelledby="title desc">
+  <title id="title">Transcript-oriented interpretation of C-to-U editing</title>
+  <desc id="desc">C-to-U editing appears as genomic C-to-T on positive-strand transcripts and genomic G-to-A on negative-strand transcripts.</desc>
+  <defs>
+    <style>
+      .title{font:700 34px Arial,sans-serif;fill:#183B4E}
+      .head{font:700 25px Arial,sans-serif;fill:#183B4E;text-anchor:middle}
+      .txt{font:400 20px Arial,sans-serif;fill:#334E5C;text-anchor:middle}
+      .base{font:700 42px Arial,sans-serif;text-anchor:middle}
+      .small{font:400 17px Arial,sans-serif;fill:#516B78;text-anchor:middle}
+      .panel{stroke:#2D5E73;stroke-width:3;rx:26;ry:26}
+      .line{stroke:#506D7A;stroke-width:5}
+      .arrow{font:700 38px Arial,sans-serif;fill:#3A556A;text-anchor:middle}
+    </style>
+  </defs>
+  <rect width="1500" height="620" fill="#F8FBFC"/>
+  <text x="750" y="58" class="title" text-anchor="middle">One biochemical event, two genomic representations</text>
+
+  <rect x="70" y="115" width="630" height="410" class="panel" fill="#EAF5FF"/>
+  <text x="385" y="165" class="head">Positive-strand transcript</text>
+  <line x1="175" y1="250" x2="595" y2="250" class="line"/>
+  <text x="210" y="225" class="small">5′</text>
+  <text x="560" y="225" class="small">3′</text>
+  <text x="285" y="315" class="base" fill="#1B7F5C">C</text>
+  <text x="385" y="315" class="arrow">→</text>
+  <text x="485" y="315" class="base" fill="#D9595C">U</text>
+  <text x="385" y="360" class="txt">RNA editing event</text>
+  <text x="385" y="423" class="txt">Genomic representation: C → T</text>
+  <text x="385" y="466" class="small">Keep genomic C-to-T when the transcript is on the + strand.</text>
+
+  <rect x="800" y="115" width="630" height="410" class="panel" fill="#FFF1F2"/>
+  <text x="1115" y="165" class="head">Negative-strand transcript</text>
+  <line x1="905" y1="250" x2="1325" y2="250" class="line"/>
+  <text x="940" y="225" class="small">3′</text>
+  <text x="1290" y="225" class="small">5′</text>
+  <text x="1015" y="315" class="base" fill="#1B7F5C">C</text>
+  <text x="1115" y="315" class="arrow">→</text>
+  <text x="1215" y="315" class="base" fill="#D9595C">U</text>
+  <text x="1115" y="360" class="txt">RNA editing event</text>
+  <text x="1115" y="423" class="txt">Genomic representation: G → A</text>
+  <text x="1115" y="466" class="small">The genomic call is reverse-complemented; this is not biochemical G editing.</text>
+
+  <text x="750" y="575" class="small">VEP transcript-strand annotation is required before genomic substitutions can be interpreted as transcript-level C-to-U evidence.</text>
+</svg>
