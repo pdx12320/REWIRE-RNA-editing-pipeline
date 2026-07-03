@@ -35,13 +35,24 @@ HEADER=$'Region\tPosition\tReference\tStrand\tCoverage-q30\tMeanQ\tBaseCount[A,C
 
 while IFS=$'\t' read -r sample group replicate srr; do
   [[ "$sample" == "sample" ]] && continue
-  bam="$SPLIT_DIR/${sample}.splitncigarreads.bam"
+
+  sample_bam="$SPLIT_DIR/${sample}.splitncigarreads.bam"
+  srr_bam="$SPLIT_DIR/${srr}.splitncigarreads.bam"
+  if [[ -f "$sample_bam" ]]; then
+    bam="$sample_bam"
+  elif [[ -f "$srr_bam" ]]; then
+    bam="$srr_bam"
+  else
+    echo "Missing BAM for $sample. Checked: $sample_bam and $srr_bam" >&2
+    exit 1
+  fi
+
+  bam_stem="$(basename "$bam" .bam)"
   coverage_dir="$COVERAGE_ROOT/${sample}/"
-  coverage_file="${coverage_dir}${sample}.splitncigarreads.cov"
+  coverage_file="${coverage_dir}${bam_stem}.cov"
   temp_dir="$TEMP_ROOT/${sample}"
   output="$TABLE_DIR/${sample}.txt.gz"
 
-  [[ -f "$bam" ]] || { echo "Missing BAM: $bam" >&2; exit 1; }
   samtools quickcheck -v "$bam"
 
   if [[ ! -s "$coverage_file" ]]; then
