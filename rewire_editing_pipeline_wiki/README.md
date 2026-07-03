@@ -1,187 +1,63 @@
-# REWIRE RNA Editing Pipeline (Model 1)
+# Model 1 — RNA-editing Evidence Pipeline
 
-This repository documents the **RNA-editing evidence pipeline** used in the REWIRE project. The goal is to derive high-confidence C-to-U (and G-to-A on reverse strand) RNA editing candidates from RNA-seq data using a reproducible multi-step workflow.
+This folder contains the iGEM-ready documentation for **Model 1**, the RNA-editing evidence pipeline used in our REWIRE project.
 
----
+Unlike a journal-style Methods section, the pages here follow an iGEM narrative:
 
-## Overview
+```text
+Why did we build it?
+→ How did we design it?
+→ What did we implement?
+→ How did we test each step?
+→ What did we learn?
+→ How does it support the wet-lab project?
+```
 
-The pipeline converts raw SRA samples into curated RNA editing candidate tables through the following stages:
+## Wiki-ready pages
 
-1. SRA → FASTQ → BAM (STAR alignment)
-2. SplitNCigarReads (GATK RNA preprocessing)
-3. Coverage construction (REDItools2 requirement)
-4. REDItools2 parallel scanning (MPI)
-5. Interval merging and table construction
-6. Treated vs control filtering (future stage)
+1. [`Model1_RNA_Editing_Evidence_Pipeline.md`](Model1_RNA_Editing_Evidence_Pipeline.md)  
+   Main Dry Lab page. This is the primary text to adapt into the team wiki.
 
----
+2. [`Code_and_Reproducibility.md`](Code_and_Reproducibility.md)  
+   Exact commands, script entry points, parameter explanations, and folder structure.
 
-## Input Data
+3. [`Figure_and_Layout_Plan.md`](Figure_and_Layout_Plan.md)  
+   Suggested iGEM page layout, figures, cards, and result placeholders.
 
-- RNA-seq samples (paired treated/control)
-- Reference genome: GRCh38 primary assembly
-- STAR index (prebuilt)
-- Sample manifest (`config/samples.tsv`)
+## What is included
 
-Example SRA sets:
-- Treated: SRR27885768, SRR27885766, SRR27885765
-- Control: SRR27885767, SRR27885764, SRR27885763
+- the biological question behind Model 1;
+- the treated/control experimental design;
+- the complete RNA-seq evidence workflow;
+- code for every computational stage;
+- quality-control checkpoints;
+- the REDItools2 contig-name fix;
+- strand-aware C-to-U interpretation;
+- replicate and depth filtering logic;
+- limitations and wet-lab validation plan.
 
----
+## What is not included yet
 
-## Core Pipeline Script
+Final result tables, numerical site counts, and completed result figures are intentionally excluded until all six samples finish the same workflow and pass the same quality checks.
 
-Main execution entry:
+## Main repository scripts
 
-```bash
+```text
+scripts/download_sra_fastq.py
+scripts/run_star_alignment.py
+scripts/run_gatk_preprocessing.py
+scripts/generate_reditools_coverage_limited.sh
+scripts/run_reditools_all_samples.sh
+scripts/reditools_union_to_vcf.py
+scripts/run_vep_annotation.py
+scripts/build_candidate_depth_tables.sh
+scripts/filter_c_to_u_and_compare.py
+```
+
+The server run currently uses:
+
+```text
 /data/ydx/igem/run_cu517_egfp_gc_paper_pipeline_v2.sh
 ```
 
-Or updated modular version:
-
-```bash
-scripts/run_reditools_all_samples.sh
-```
-
----
-
-## Step 1: Alignment (STAR)
-
-```bash
-STAR \
-  --runThreadN 16 \
-  --genomeDir STAR_index \
-  --readFilesIn sample.fastq \
-  --outSAMtype BAM SortedByCoordinate
-```
-
-Output:
-- sorted BAM
-- indexed BAM
-
----
-
-## Step 2: GATK SplitNCigarReads
-
-Used to prepare RNA-seq alignments for variant calling.
-
-```bash
-gatk SplitNCigarReads \
-  -R reference.fa \
-  -I input.bam \
-  -O split.bam
-```
-
----
-
-## Step 3: Coverage Generation
-
-Coverage is required by REDItools2 to accelerate base-level scanning.
-
-```bash
-samtools depth split.bam > coverage.txt
-```
-
-Notes:
-- includes all chromosomes (chr1–chrY, GL*, KI*)
-- must preserve contig version numbers (.1, .2)
-
----
-
-## Step 4: REDItools2 Parallel Scan
-
-MPI-based scanning of RNA mismatches.
-
-```bash
-mpirun -np 30 python2 parallel_reditools.py \
-  -f split.bam \
-  -r reference.fa \
-  -G coverage_file \
-  -D coverage_dir \
-  -t temp_dir \
-  -Z reference.fa.fai \
-  -S -me 20
-```
-
-Key parameters:
-- `-S`: strand-aware mode
-- `-me 20`: minimum coverage threshold
-- `-np`: MPI workers
-
----
-
-## Known Implementation Fixes
-
-### 1. Contig parsing bug (critical)
-
-Fixed issue:
-- GL/KI contig names were truncated incorrectly
-
-Fix applied:
-```python
-pieces = os.path.basename(little_file)[:-3].rsplit("#", 2)
-```
-
-### 2. Missing read group / MPI errors
-
-Resolved by ensuring BAM compatibility and correct MPI slot allocation.
-
----
-
-## Step 5: Merge REDItools2 Output
-
-All interval chunks are merged into a single table:
-
-- Region
-- Position
-- Base counts
-- Editing frequency
-
-Output format:
-```
-Region Position Reference Strand Coverage ... Frequency
-```
-
----
-
-## Step 6: Treated vs Control Filtering
-
-Final candidate definition:
-
-- Treated editing rate ≥ threshold
-- Control background rate ≤ threshold
-- Minimum coverage ≥ 20
-- Optional Fisher test filtering
-
----
-
-## Output Structure
-
-```
-reditools/
-├── coverage/
-├── tmp/
-├── tables/
-│   ├── *_T1.txt.gz
-│   ├── *_T2.txt.gz
-│   └── *_high_confidence.tsv.gz (future)
-└── logs/
-```
-
----
-
-## Notes
-
-- GL/KI contigs are retained with version suffixes (.1, .2)
-- Pipeline is MPI-parallel and cluster-scale
-- Coverage stage is required for REDItools2 interval splitting
-- All intermediate files are preserved for reproducibility
-
----
-
-## Status
-
-- T1 (REDItools2 scan): completed
-- T2–T6: in progress
-- Final candidate set: pending
+The modular scripts in the repository reproduce the same logic in a form that is easier to document and reuse.
