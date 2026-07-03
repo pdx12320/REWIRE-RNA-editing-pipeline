@@ -13,6 +13,12 @@
 *.csi
 *.vcf.gz
 
+# Numerical results are not committed while the six-sample analysis is running
+results/**
+!results/**/
+!results/**/README*
+!results/**/ABOUT*
+
 # Runtime folders
 work/
 tmp/
