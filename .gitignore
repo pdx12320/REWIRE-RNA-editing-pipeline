@@ -1,0 +1,28 @@
+# Sequencing data
+*.sra
+*.fastq
+*.fastq.gz
+*.bam
+*.bai
+*.cram
+*.crai
+
+# Large intermediate tables
+*.cov
+*.tbi
+*.csi
+*.vcf.gz
+
+# Runtime folders
+work/
+tmp/
+logs/
+project_output/
+
+# Python
+__pycache__/
+*.pyc
+
+# Editors and OS
+.DS_Store
+*.swp
