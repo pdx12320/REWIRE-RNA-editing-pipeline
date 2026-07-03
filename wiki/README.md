@@ -10,6 +10,7 @@ This folder contains copy-ready English text and executable code blocks for the 
 4. `Methods.md` — concise methods text for a formal Wiki section
 5. `Filtering.md` — replicate, depth, strand, and WGS logic
 6. `Interpretation.md` — evidence boundaries and validation needs
-7. `RESULTS_TEMPLATE.md` — placeholders for final counts and figures
+7. `Figure_and_table_plan.md` — Wiki-ready captions, diagrams, and tables
+8. `RESULTS_TEMPLATE.md` — placeholders for final counts and figures
 
 The methods and code are complete. Numerical result files are intentionally not committed until all six libraries have completed the same analysis and passed integrity checks.
