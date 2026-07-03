@@ -1,7 +1,9 @@
-# Model 1 summary for the iGEM Wiki
+# Model 1 — RNA-editing Evidence Pipeline
 
-To evaluate the transcriptome-wide specificity of our REWIRE cytidine editor, we developed a reproducible RNA-seq evidence pipeline using three treated and three matched control libraries. Reads are aligned to GRCh38 with STAR, processed with GATK, and analyzed with parallel REDItools2. Candidate substitutions are then annotated with VEP so that transcript-level C-to-U events can be interpreted correctly as genomic C-to-T on positive-strand transcripts or genomic G-to-A on negative-strand transcripts.
+Reporter editing tells us that REWIRE can work at the designed target. Model 1 asks the next question: **where else does a reproducible C-to-U signal appear?**
 
-A missing call is not automatically treated as evidence of absence. Candidate-site depth is measured independently in all six samples, and the final evidence matrix retains replicate-level call status, depth, edited-read support, and editing frequency. Our conservative default requires support in all treated replicates, no call in controls, sufficient depth in every sample, and removal of matched genomic variants when WGS data are available.
+We compared three editor-treated RNA-seq libraries with three matched controls. Reads were aligned to GRCh38, prepared for RNA-aware site analysis, and scanned with parallel REDItools2. We then used transcript-strand annotation to interpret genomic C-to-T and G-to-A substitutions as transcript-level C-to-U evidence.
 
-Model 1 provides the evidence-generation layer for the REWIRE dry lab. It converts raw sequencing data into auditable computational RNA-editing candidates that can support downstream biological interpretation and predictive modeling.
+A missing call was not treated automatically as a negative result. Candidate-site depth was measured independently in all six samples, allowing us to distinguish a well-covered control without an edit call from a control that was never informative at that position.
+
+The final evidence matrix retains replicate-level call status, sequencing depth, edited-read support, and editing frequency. Model 1 therefore acts as the evidence layer connecting wet-lab RNA-seq, candidate prioritization, experimental validation, and future sequence modeling.
