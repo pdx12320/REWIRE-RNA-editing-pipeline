@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1300" height="900" viewBox="0 0 1300 900">
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 z" fill="#4D6673"/>
+    </marker>
+  </defs>
+  <rect width="1300" height="900" fill="#F8FBFC"/>
+  <text x="650" y="55" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#183B4E">Model 1 evidence funnel</text>
+
+  <polygon points="170,115 1130,115 1060,205 240,205" fill="#EAF5FF" stroke="#2D5E73" stroke-width="3"/>
+  <text x="650" y="165" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#183B4E">All REDItools2 substitutions</text>
+
+  <line x1="650" y1="205" x2="650" y2="250" stroke="#4D6673" stroke-width="4" marker-end="url(#arrow)"/>
+  <polygon points="240,270 1060,270 1000,360 300,360" fill="#F4ECFF" stroke="#2D5E73" stroke-width="3"/>
+  <text x="650" y="320" text-anchor="middle" font-family="Arial" font-size="22" fill="#183B4E">Transcript-strand-consistent C-to-U</text>
+
+  <line x1="650" y1="360" x2="650" y2="405" stroke="#4D6673" stroke-width="4" marker-end="url(#arrow)"/>
+  <polygon points="300,425 1000,425 945,515 355,515" fill="#EAF8EE" stroke="#2D5E73" stroke-width="3"/>
+  <text x="650" y="475" text-anchor="middle" font-family="Arial" font-size="22" fill="#183B4E">Called in all 3 treated replicates</text>
+
+  <line x1="650" y1="515" x2="650" y2="560" stroke="#4D6673" stroke-width="4" marker-end="url(#arrow)"/>
+  <polygon points="355,580 945,580 895,670 405,670" fill="#FFF7E5" stroke="#2D5E73" stroke-width="3"/>
+  <text x="650" y="630" text-anchor="middle" font-family="Arial" font-size="22" fill="#183B4E">Called in 0 of 3 controls</text>
+
+  <line x1="650" y1="670" x2="650" y2="715" stroke="#4D6673" stroke-width="4" marker-end="url(#arrow)"/>
+  <polygon points="405,735 895,735 850,815 450,815" fill="#FFEDEF" stroke="#2D5E73" stroke-width="3"/>
+  <text x="650" y="775" text-anchor="middle" font-family="Arial" font-size="21" fill="#183B4E">Depth at least 20 in all 6 samples</text>
+
+  <text x="650" y="855" text-anchor="middle" font-family="Arial" font-size="19" fill="#516B78">Optional final exclusion: overlap with a matched HEK293T WGS variant set</text>
+</svg>
