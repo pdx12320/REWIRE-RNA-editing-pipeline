@@ -1,8 +1,1 @@
-File	Description	Use
-CU5.15_EGFP_CC.control_corrected.PUF_candidates.tsv.gz	Treated-control corrected candidate C-to-U editing sites	Candidate positive set and source table for stricter filtering
-CU5.15_EGFP_CC.high_confidence_candidates.tsv.gz	Strict subset filtered from the candidate table	High-confidence positive set and figure source
-pipeline_overview.png	Workflow schematic	Wiki method figure
-strand_definition.png	Strand-aware C-to-U signal definition	Wiki method figure
-treated_vs_control_scatter.png	Treated versus control editing rate for high-confidence sites	Result figure
-edit_rate_distribution.png	Treated editing-rate distribution for high-confidence sites	Result figure
-candidate_level_barplot.png	High-confidence site counts by editing-rate bin	Result figure
+-
