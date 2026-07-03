@@ -72,11 +72,13 @@ scripts/
   filter_c_to_u_and_compare.py        final evidence matrix
 
 wiki/
+  Short_summary.md
   Model1_RNA_editing_evidence_pipeline.md
   Code_and_commands.md
   Methods.md
   Filtering.md
   Interpretation.md
+  Figure_and_table_plan.md
   RESULTS_TEMPLATE.md
 
 results/
@@ -122,7 +124,7 @@ GRCh38 contigs such as `GL000194.1` and `KI270750.1` include version suffixes as
 
 ## Results status
 
-The methods and executable workflow are complete. Numerical result files, final site counts, and result figures will be added only after all six samples finish the same workflow and pass integrity checks.
+The methods and executable workflow are complete. Numerical result files, final site counts, and result figures will be added only after all six samples finish the same workflow and pass integrity checks. The `results/` directory is protected by `.gitignore` so result artifacts are not committed accidentally.
 
 ## iGEM Wiki material
 
@@ -133,5 +135,10 @@ The main copy-ready page is:
 Exact code blocks are provided in:
 
 - `wiki/Code_and_commands.md`
+
+A short homepage summary and Wiki-ready figure captions are provided in:
+
+- `wiki/Short_summary.md`
+- `wiki/Figure_and_table_plan.md`
 
 The original repository state is preserved on branch `backup-before-paper-pipeline-20260704`.
