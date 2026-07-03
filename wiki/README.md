@@ -10,8 +10,9 @@ This folder contains the copy-ready English material for our **RNA-editing evide
 4. [`Code_and_commands.md`](Code_and_commands.md) — executable workflow and reproducibility
 5. [`Filtering.md`](Filtering.md) — strand, replicate, depth, and WGS logic
 6. [`Interpretation.md`](Interpretation.md) — what the evidence can and cannot prove
-7. [`Figure_and_table_plan.md`](Figure_and_table_plan.md) — visual layout and future figure plan
-8. [`RESULTS_TEMPLATE.md`](RESULTS_TEMPLATE.md) — result-page placeholders only
+7. [`Page_layout.md`](Page_layout.md) — recommended iGEM page order and visual blocks
+8. [`Figure_and_table_plan.md`](Figure_and_table_plan.md) — figure captions and future result panels
+9. [`RESULTS_TEMPLATE.md`](RESULTS_TEMPLATE.md) — result-page placeholders only
 
 ## Main page flow
 
