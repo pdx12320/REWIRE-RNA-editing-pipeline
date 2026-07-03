@@ -34,17 +34,25 @@ The machine-readable manifest is stored in `config/samples.tsv`.
 
 ```text
 config/   fixed sample manifest
-docs/     installation, runbook, workflow, outputs, troubleshooting, limitations
-scripts/  REDItools2 coverage, union-VCF, strand filtering, replicate comparison
+docs/     installation, execution, workflow, outputs, troubleshooting, limitations
+scripts/  executable stages and filtering helpers
 wiki/     English text for direct adaptation to an iGEM wiki
-results/  placeholders for final tables and figures
+results/  placeholder folders for final tables, QC summaries, and figures
 ```
 
-## Main scripts
+## Scripts
 
-- `generate_reditools_coverage_limited.sh` builds per-sample coverage maps without launching one disk-intensive job for every contig simultaneously.
-- `reditools_union_to_vcf.py` combines substitutions from the six REDItools2 tables into a union VCF and candidate-position BED.
-- `filter_c_to_u_and_compare.py` applies transcript-strand interpretation, all-replicate depth checks, treated-control comparison, and optional WGS filtering.
+| File | Purpose |
+|---|---|
+| `download_sra_fastq.py` | download the six SRA libraries and create paired compressed FASTQ files |
+| `run_star_alignment.py` | STAR two-pass alignment with sample read groups |
+| `run_gatk_preprocessing.py` | read-group repair, MarkDuplicates, and SplitNCigarReads |
+| `generate_reditools_coverage_limited.sh` | create REDItools2 coverage maps with limited disk concurrency |
+| `run_reditools_all_samples.sh` | run and merge parallel REDItools2 calls for all six samples |
+| `reditools_union_to_vcf.py` | create a union substitution VCF and candidate-position BED |
+| `run_vep_annotation.py` | offline GRCh38 VEP transcript-strand annotation |
+| `build_candidate_depth_tables.sh` | measure candidate-site depth in every replicate |
+| `filter_c_to_u_and_compare.py` | strand-aware C-to-U interpretation and treated-control comparison |
 
 Run shell files with `bash` and Python files with `python3`.
 
@@ -58,12 +66,13 @@ Without a matched HEK293T WGS variant file, the final table remains an RNA-deriv
 
 ## Results status
 
-The analysis is still running. No numerical result counts from the older lightweight CU5.15 analysis are retained on the main branch. Final CU5.17 tables and figures will be added only after all six samples complete the same workflow and pass integrity checks.
+The analysis is still running. Numerical results from the older lightweight CU5.15 analysis have been retired. Final CU5.17 tables and figures will be added only after all six samples complete the same workflow and pass integrity checks.
 
-## Documentation
+## Documentation and wiki text
 
 - `docs/INSTALLATION.md`
 - `docs/RUNBOOK.md`
+- `docs/STEP_BY_STEP.md`
 - `docs/PIPELINE.md`
 - `docs/OUTPUTS.md`
 - `docs/TROUBLESHOOTING.md`
@@ -71,3 +80,5 @@ The analysis is still running. No numerical result counts from the older lightwe
 - `wiki/Dry_Lab.md`
 - `wiki/Methods.md`
 - `wiki/RESULTS_TEMPLATE.md`
+
+The original repository state is preserved on the branch `backup-before-paper-pipeline-20260704`.
