@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="620" viewBox="0 0 1500 620">
+  <rect width="1500" height="620" fill="#F8FBFC"/>
+  <text x="750" y="58" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#183B4E">Engineering fix: preserve versioned GRCh38 contig names</text>
+
+  <rect x="80" y="120" width="620" height="390" rx="26" fill="#FFF0F1" stroke="#9A3E48" stroke-width="3"/>
+  <text x="390" y="168" text-anchor="middle" font-family="Arial" font-size="25" font-weight="700" fill="#8B2F38">Before</text>
+  <text x="390" y="235" text-anchor="middle" font-family="Courier New" font-size="23" fill="#334E5C">GL000009.2#100#500.gz</text>
+  <text x="390" y="295" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#8B2F38">↓</text>
+  <text x="390" y="350" text-anchor="middle" font-family="Courier New" font-size="28" fill="#8B2F38">GL000009</text>
+  <text x="390" y="405" text-anchor="middle" font-family="Arial" font-size="19" fill="#516B78">Version suffix and interval coordinates were lost.</text>
+  <text x="390" y="445" text-anchor="middle" font-family="Arial" font-size="19" fill="#516B78">The name no longer matched the FASTA index.</text>
+
+  <rect x="800" y="120" width="620" height="390" rx="26" fill="#EAF8EE" stroke="#287A55" stroke-width="3"/>
+  <text x="1110" y="168" text-anchor="middle" font-family="Arial" font-size="25" font-weight="700" fill="#155D3D">After</text>
+  <text x="1110" y="235" text-anchor="middle" font-family="Courier New" font-size="23" fill="#334E5C">GL000009.2#100#500.gz</text>
+  <text x="1110" y="295" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#155D3D">↓</text>
+  <text x="1110" y="350" text-anchor="middle" font-family="Courier New" font-size="25" fill="#155D3D">GL000009.2 | 100 | 500</text>
+  <text x="1110" y="405" text-anchor="middle" font-family="Arial" font-size="19" fill="#516B78">Only the final .gz extension is removed.</text>
+  <text x="1110" y="445" text-anchor="middle" font-family="Arial" font-size="19" fill="#516B78">The complete reference identifier is preserved.</text>
+
+  <rect x="365" y="545" width="770" height="45" rx="16" fill="#EAF3F7"/>
+  <text x="750" y="575" text-anchor="middle" font-family="Courier New" font-size="20" fill="#183B4E">pieces = os.path.basename(little_file)[:-3].rsplit(&quot;#&quot;, 2)</text>
+</svg>
