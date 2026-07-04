@@ -1,0 +1,17 @@
+name: rewire_wgs
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.11
+  - sra-tools
+  - bwa
+  - bwa-mem2
+  - samtools
+  - bcftools
+  - gatk4
+  - htslib
+  - pigz
+  - curl
+  - openjdk=17
