@@ -1,0 +1,5 @@
+name: reditools2_py2
+channels:
+  - defaults
+dependencies:
+  - python=2.7.18
