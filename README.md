@@ -1,71 +1,58 @@
 # REWIRE Model 1 — RNA-editing evidence pipeline
 
-This repository contains the complete implementation of **Model 1**, the RNA-editing evidence pipeline used in the REWIRE iGEM project.
-
-Model 1 converts six paired-end RNA-seq libraries into an auditable, transcript-oriented evidence matrix for candidate C-to-U editing sites.
+This repository contains the complete implementation of **Model 1**, which converts treated/control RNA-seq and public HEK293T WGS data into an auditable evidence matrix for candidate transcript-level C-to-U editing.
 
 ## Main links
 
-- **Copy-ready iGEM Wiki page:** [`wiki/Model1_RNA_editing_evidence_pipeline.md`](wiki/Model1_RNA_editing_evidence_pipeline.md)
-- **Editable Wiki figures:** [`wiki/assets/`](wiki/assets/)
-- **Sample manifest:** [`config/samples.tsv`](config/samples.tsv)
+- **Main iGEM Wiki page:** [`wiki/Model1_RNA_editing_evidence_pipeline.md`](wiki/Model1_RNA_editing_evidence_pipeline.md)
+- **Copy-ready Methods section:** [`wiki/Model1_Methods_copy_ready.md`](wiki/Model1_Methods_copy_ready.md)
+- **Figure 1 with RNA-seq and WGS branches:** [`wiki/assets/model1_pipeline_with_wgs.svg`](wiki/assets/model1_pipeline_with_wgs.svg)
+- **RNA sample manifest:** [`config/samples.tsv`](config/samples.tsv)
+- **Public WGS run manifest:** [`config/wgs_runs.tsv`](config/wgs_runs.tsv)
+- **WGS technical guide:** [`docs/WGS_filtering.md`](docs/WGS_filtering.md)
 - **Executable scripts:** [`scripts/`](scripts/)
-- **Technical notes:** [`docs/`](docs/)
-
-The Wiki page links back to this README so readers can inspect the code and methodological details directly on GitHub.
-
----
 
 ## Scientific question
 
-Reporter editing demonstrates that REWIRE can act at the designed target, but it does not establish transcriptome-wide specificity. Model 1 therefore asks:
+Reporter editing demonstrates on-target activity but does not establish transcriptome-wide specificity. Model 1 asks which substitutions are:
 
-1. Which substitutions are reproducibly detected in editor-treated samples?
-2. Which substitutions are consistent with transcript-level C-to-U editing?
-3. Which candidates remain after control, depth, strand, and optional genomic-variant filtering?
+1. reproducible across three treated RNA-seq replicates;
+2. absent or minimal in three controls with sufficient coverage;
+3. consistent with transcript-level C-to-U editing after strand annotation;
+4. not readily explained by a public HEK293T genomic SNV.
 
----
+## Figure 1
 
-## Dataset
+![RNA-editing evidence generation pipeline](wiki/assets/model1_pipeline_with_wgs.svg)
 
-| Group | Replicate | Sample | SRA accession |
-|---|---:|---|---|
-| Treated | 1 | CU517_GC_T1 | SRR27885768 |
-| Treated | 2 | CU517_GC_T2 | SRR27885766 |
-| Treated | 3 | CU517_GC_T3 | SRR27885765 |
-| Control | 1 | CU517_GC_C1 | SRR27885767 |
-| Control | 2 | CU517_GC_C2 | SRR27885764 |
-| Control | 3 | CU517_GC_C3 | SRR27885763 |
-
----
+The RNA-seq and WGS branches use the same GRCh38 reference and converge in an exact-allele, site-level evidence matrix. Public WGS is an external blacklist rather than WGS matched to the experimental CU5.17 cell batch.
 
 ## Workflow
 
-![Model 1 workflow](wiki/assets/model1_workflow.svg)
-
 ```text
-SRA paired-end RNA-seq
-→ FASTQ conversion
-→ STAR two-pass alignment to GRCh38
-→ read-group validation
-→ GATK MarkDuplicates
-→ GATK SplitNCigarReads
-→ coverage-aware parallel REDItools2 calling
-→ union substitution VCF
-→ VEP transcript-strand annotation
-→ transcript-oriented C-to-U interpretation
-→ depth confirmation in all six samples
-→ treated/control comparison
-→ optional matched HEK293T WGS filtering
-```
+RNA-seq branch
+SRA → FASTQ → STAR → GATK → coverage map → REDItools2 → VEP
+      → all-sample depth → treated/control comparison
 
----
+WGS branch
+SRA metadata → FASTQ → BWA-MEM2/BWA-MEM → GATK MarkDuplicates
+      → bcftools calling → merged or 2-of-3 consensus SNV blacklist
+
+Integration
+RNA evidence matrix + exact-allele WGS blacklist
+      → treatment-associated C-to-U candidates
+```
 
 ## Repository layout
 
 ```text
 config/
   samples.tsv
+  wgs_runs.tsv
+
+environment/
+  reditools2_py2.yml
+  wgs_pipeline.yml
 
 scripts/
   download_sra_fastq.py
@@ -76,231 +63,178 @@ scripts/
   reditools_union_to_vcf.py
   run_vep_annotation.py
   build_candidate_depth_tables.sh
-  filter_utils.py
-  filter_calls.py
   filter_c_to_u_and_compare.py
+  wgs/
+    00_check_sra_metadata.sh
+    run_3run_wgs_pipeline.sh
+    filter_single_sample_vcf.py
+    build_consensus_blacklist.py
 
 wiki/
   Model1_RNA_editing_evidence_pipeline.md
-  assets/
-    model1_workflow.svg
-    strand_orientation.svg
-    evidence_logic.svg
-    filtering_funnel.svg
-    contig_fix.svg
-    wetlab_drylab_loop.svg
-    dbtl.svg
+  Model1_Methods_copy_ready.md
+  assets/model1_pipeline_with_wgs.svg
 
 docs/
-  installation, commands, troubleshooting, outputs, and limitations
+  WGS_filtering.md
+  installation, troubleshooting, outputs and limitations
 
 results/
-  placeholders only; final numerical results are not committed yet
+  placeholders only; no numerical result files are committed yet
 ```
 
----
-
-## Quick start
-
-Define the shared paths:
+## RNA-seq quick start
 
 ```bash
 PROJECT=/data/ydx/igem/CU5.17_EGFP_GC_paper
 REF=/data/ydx/igem/GRCh38.primary_assembly.genome.fa
 STAR_INDEX=/data/ydx/igem/STAR_index
 REDITOOLS=/data/ydx/igem/REDItools2
-MANIFEST=config/samples.tsv
-```
 
-### 1. Download SRA and convert to FASTQ
-
-```bash
 python3 scripts/download_sra_fastq.py \
   --project "$PROJECT" \
-  --manifest "$MANIFEST" \
+  --manifest config/samples.tsv \
   --threads 16
-```
 
-### 2. STAR alignment
-
-```bash
 python3 scripts/run_star_alignment.py \
   --project "$PROJECT" \
   --star-index "$STAR_INDEX" \
-  --manifest "$MANIFEST" \
+  --manifest config/samples.tsv \
   --threads 50
-```
 
-### 3. GATK RNA preprocessing
-
-```bash
 python3 scripts/run_gatk_preprocessing.py \
   --project "$PROJECT" \
   --reference "$REF" \
-  --manifest "$MANIFEST" \
+  --manifest config/samples.tsv \
   --java-options=-Xmx16g
-```
 
-### 4. REDItools2
-
-```bash
 conda activate reditools2_py2
-
 nohup bash scripts/run_reditools_all_samples.sh \
-  "$PROJECT" \
-  "$REF" \
-  "$REDITOOLS" \
-  "$CONDA_PREFIX/bin/python" \
+  "$PROJECT" "$REF" "$REDITOOLS" "$CONDA_PREFIX/bin/python" \
   30 8 8 \
   > "$PROJECT/logs/reditools.log" 2>&1 &
 ```
 
-The last three values are:
+## Public HEK293T WGS quick start
+
+Configured runs:
 
 ```text
-30  MPI processes
-8   simultaneous coverage jobs
-8   compression threads
+SRR37832939
+SRR37832940
+SRR37832941
 ```
 
-### 5. Union VCF and BED
+Create the environment and inspect metadata:
+
+```bash
+conda env create -f environment/wgs_pipeline.yml
+conda activate rewire_wgs
+
+bash scripts/wgs/00_check_sra_metadata.sh \
+  config/wgs_runs.tsv \
+  wgs_sra_metadata.tsv
+```
+
+Run automatically:
+
+```bash
+WGS_OUT=/data/ydx/igem/HEK293T_public_WGS_3runs
+
+nohup bash scripts/wgs/run_3run_wgs_pipeline.sh \
+  --runs config/wgs_runs.tsv \
+  --reference "$REF" \
+  --outdir "$WGS_OUT" \
+  --mode auto \
+  --threads 32 \
+  --min-dp 10 \
+  --min-alt 3 \
+  --min-vaf 0.05 \
+  --min-qual 20 \
+  > "$WGS_OUT.pipeline.log" 2>&1 &
+```
+
+The metadata determine whether runs are merged as one BioSample or called separately to produce a two-of-three exact-allele consensus blacklist.
+
+## Final integration
 
 ```bash
 python3 scripts/reditools_union_to_vcf.py \
-  --manifest "$MANIFEST" \
+  --manifest config/samples.tsv \
   --reditools-dir "$PROJECT/reditools/tables" \
   --vcf "$PROJECT/vcf/CU5.17_EGFP_GC.REDItools_union.vcf" \
   --bed "$PROJECT/vcf/CU5.17_EGFP_GC.REDItools_union.bed"
-```
 
-### 6. VEP transcript-strand annotation
-
-```bash
 python3 scripts/run_vep_annotation.py \
   --project "$PROJECT" \
   --cache /path/to/vep_cache
-```
 
-### 7. Candidate-site depth in all six samples
-
-```bash
 bash scripts/build_candidate_depth_tables.sh \
   "$PROJECT" \
   "$PROJECT/vcf/CU5.17_EGFP_GC.REDItools_union.bed" \
-  "$MANIFEST"
-```
+  config/samples.tsv
 
-### 8. Final evidence matrix
-
-```bash
 python3 scripts/filter_c_to_u_and_compare.py \
-  --manifest "$MANIFEST" \
+  --manifest config/samples.tsv \
   --reditools-dir "$PROJECT/reditools/tables" \
   --vep "$PROJECT/vep/CU5.17_EGFP_GC.vep.tsv" \
   --depth-dir "$PROJECT/candidate_depth" \
   --output-dir "$PROJECT/final" \
+  --wgs-vcf "$WGS_OUT/vcf/HEK293T_3runs.consensus2of3.SNV.vcf.gz" \
   --min-treated-reps 3 \
   --max-control-called-reps 0 \
   --min-depth-all-reps 20
 ```
 
-Optional matched WGS filtering:
+If metadata resolve to merge mode, use:
 
 ```text
---wgs-vcf /path/to/HEK293T.filtered.vcf.gz
+$WGS_OUT/vcf/HEK293T_3runs.filtered.SNV.vcf.gz
 ```
-
----
 
 ## Key methodological decisions
 
-### Strict REDItools2 discovery
+### REDItools2 discovery
 
 ```text
--S       output positions containing observed edits
--me 20   require at least 20 editing events at a reported position
--q 20    default minimum mapping quality
--bq 30   default minimum base quality
+-S       report positions containing observed substitutions
+-me 20   require at least 20 edited reads at a reported site
+-q 20    minimum mapping quality
+-bq 30   minimum base quality
 ```
 
-`-me 20` is an edited-read threshold, not a total-depth threshold.
-
-### Transcript-oriented C-to-U interpretation
-
-![Strand interpretation](wiki/assets/strand_orientation.svg)
+### Transcript-oriented interpretation
 
 ```text
 positive-strand transcript: genomic C→T
 negative-strand transcript: genomic G→A
 ```
 
-### Independent depth confirmation
-
-A missing REDItools2 call is interpreted together with independently measured candidate-site depth in every BAM.
-
-![Evidence logic](wiki/assets/evidence_logic.svg)
-
-### Conservative default rule
-
-![Filtering funnel](wiki/assets/filtering_funnel.svg)
+### Conservative evidence rule
 
 ```text
-called in all three treated replicates
-called in no control replicate
+3/3 treated calls
+0/3 control calls
 candidate-site depth ≥20 in all six samples
-strand consistent with transcript-level C-to-U editing
-absent from the optional matched WGS variant set
+strand consistent with C-to-U
+exact allele absent from the selected public WGS blacklist
 ```
 
----
+### WGS single-run thresholds
 
-## REDItools2 contig-name fix
-
-GRCh38 supplementary contigs include version suffixes such as `.1` and `.2`. The original temporary-file parser removed these suffixes and caused the final merge to fail.
-
-![Contig parsing fix](wiki/assets/contig_fix.svg)
-
-The corrected parser is:
-
-```python
-pieces = os.path.basename(little_file)[:-3].rsplit("#", 2)
+```text
+DP ≥10
+ALT reads ≥3
+VAF ≥0.05
+QUAL ≥20
 ```
 
-Only the final `.gz` extension is removed; the exact contig identifier is preserved.
+### Public WGS boundary
 
----
-
-## Quality-control checks
-
-```bash
-samtools quickcheck -v sample.bam
-gzip -t sample.txt.gz
-tabix -l sample.txt.gz
-zcat sample.txt.gz | head
-```
-
-The workflow also checks read groups, per-sample coverage directories, interval completion, reference ordering, and the presence of tabix indexes.
-
----
-
-## Wiki figures
-
-All diagrams are stored as editable SVG files under `wiki/assets/`:
-
-- complete workflow;
-- transcript-strand interpretation;
-- depth and replicate evidence logic;
-- evidence filtering funnel;
-- REDItools2 contig parsing fix;
-- Wet Lab–Dry Lab feedback loop;
-- Design–Build–Test–Learn.
-
-They can be downloaded directly from GitHub and uploaded to the iGEM Wiki media system without redrawing.
-
----
+The WGS data are external public HEK293T genomes. They strengthen genomic-SNV filtering but cannot be described as matched WGS from the exact experimental cell batch.
 
 ## Results status
 
-The methods, source code, and Wiki figures are included. Numerical result files, final site counts, and result-specific plots are intentionally excluded until all six samples complete the same workflow and pass the same integrity checks.
+Methods, scripts, environments and editable Wiki figures are included. Numerical result files and result-specific plots are intentionally excluded until the six RNA-seq samples and selected WGS workflow pass the same integrity checks.
 
-The original repository state remains available on branch `backup-before-paper-pipeline-20260704`.
+The repository state before the Model 1 rebuild remains available on branch `backup-before-paper-pipeline-20260704`.
