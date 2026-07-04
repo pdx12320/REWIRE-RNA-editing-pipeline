@@ -119,7 +119,24 @@ The final page will report per-sample calls, strand-consistent candidates, treat
 
 ## Wet-lab integration
 
-Model 1 prioritises sites for targeted amplicon sequencing, independent RNA-seq or another orthogonal assay. The evidence matrix can also provide carefully defined positive and background examples for downstream sequence models.
+Model 1 prioritises sites for targeted amplicon sequencing, independent RNA-seq or another orthogonal assay.
+
+## Connection to Model 2 — Lamar
+
+The evidence matrix is also designed to provide quality-controlled labels for Model 2, our Lamar-based nucleotide sequence model. Model 1 supplies the genomic coordinate, transcript-oriented sequence context, treated and control editing fractions, replicate support, depth and WGS-overlap status for each candidate.
+
+For editing-efficiency prediction, Model 2 should use a continuous, background-corrected target rather than only a positive/negative label. One planned label is:
+
+```python
+corrected_efficiency = max(
+    0.0,
+    median_treated_editing_rate - median_control_editing_rate
+)
+```
+
+Only sites with sufficient depth, consistent transcript orientation and no selected WGS blacklist match are eligible for training. High-confidence edited sites provide positive examples, whereas sufficiently covered sites with little or no control-corrected editing provide background examples.
+
+To reduce sequence leakage, training and evaluation sets should be separated by gene, transcript or genomic region rather than by random rows. Model 1 therefore acts as the evidence and label-generation layer; Model 2 learns sequence features associated with editing efficiency.
 
 ## Limitations
 
@@ -131,9 +148,11 @@ Because the WGS data are public and were not generated from the exact CU5.17 exp
 
 They should not be described as definitively SNV-free off-targets.
 
+Model 2 labels inherit the uncertainty of Model 1. Predicted editing efficiency should therefore be interpreted as an evidence-derived estimate and validated on independent experiments where possible.
+
 ## Contribution
 
-Model 1 provides a fixed three-treated/three-control evidence design, coverage-balanced REDItools2 calling, recovery of versioned GRCh38 contigs, transcript-oriented interpretation, independent control-depth assessment and an exact-allele public WGS blacklist.
+Model 1 provides a fixed three-treated/three-control evidence design, coverage-balanced REDItools2 calling, recovery of versioned GRCh38 contigs, transcript-oriented interpretation, independent control-depth assessment, an exact-allele public WGS blacklist and a structured label source for Lamar-based efficiency modelling.
 
 ## References
 
