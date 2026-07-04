@@ -89,7 +89,7 @@ Every union candidate is queried directly in all six BAM files using base qualit
 
 ## 6. Public WGS filtering
 
-Public WGS reads are aligned to the same GRCh38 FASTA using BWA-MEM2 or BWA-MEM,<sup>7</sup> followed by duplicate marking and SNV calling with bcftools.<sup>8</sup> Variants are normalised against the same reference used for RNA-seq.
+Public WGS reads are aligned to the same GRCh38 FASTA using BWA-MEM2 or BWA-MEM,<sup>7,8</sup> followed by duplicate marking and SNV calling with bcftools.<sup>9</sup> Variants are normalised against the same reference used for RNA-seq.
 
 A single-run SNV is retained when depth is ≥10, alternate-read count is ≥3, alternate-allele fraction is ≥0.05 and QUAL is ≥20.
 
@@ -143,7 +143,8 @@ Model 1 provides a fixed three-treated/three-control evidence design, coverage-b
 4. McKenna, A. *et al.* The Genome Analysis Toolkit: a MapReduce framework for analyzing next-generation DNA sequencing data. *Genome Res.* **20**, 1297–1303 (2010). doi:10.1101/gr.107524.110
 5. Picardi, E. & Pesole, G. REDItools: high-throughput RNA editing detection made easy. *Bioinformatics* **29**, 1813–1814 (2013). doi:10.1093/bioinformatics/btt287
 6. McLaren, W. *et al.* The Ensembl Variant Effect Predictor. *Genome Biol.* **17**, 122 (2016). doi:10.1186/s13059-016-0974-4
-7. Li, H. & Durbin, R. Fast and accurate short read alignment with Burrows–Wheeler transform. *Bioinformatics* **25**, 1754–1760 (2009). doi:10.1093/bioinformatics/btp324
-8. Danecek, P. *et al.* Twelve years of SAMtools and BCFtools. *GigaScience* **10**, giab008 (2021). doi:10.1093/gigascience/giab008
+7. Li, H. Aligning sequence reads, clone sequences and assembly contigs with BWA-MEM. *arXiv* 1303.3997 (2013). doi:10.48550/arXiv.1303.3997
+8. Vasimuddin, M., Misra, S., Li, H. & Aluru, S. Efficient architecture-aware acceleration of BWA-MEM for multicore systems. *Proc. IEEE Int. Parallel Distrib. Process. Symp.* 314–324 (2019). doi:10.1109/IPDPS.2019.00041
+9. Danecek, P. *et al.* Twelve years of SAMtools and BCFtools. *GigaScience* **10**, giab008 (2021). doi:10.1093/gigascience/giab008
 
 **Code and reproducibility:** https://github.com/pdx12320/REWIRE-RNA-editing-pipeline
