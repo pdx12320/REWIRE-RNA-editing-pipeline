@@ -29,11 +29,14 @@ rm -f "$COMPLETE_MARKER" "$TEMP_COV"
 export BAM COVERAGE_DIR SAMTOOLS_BIN
 
 cut -f1 "$FAI" | xargs -r -n 1 -P "$JOBS" bash -c '
+  set -Eeuo pipefail
   chrom="$1"
   printf "[%s] Coverage %s\n" "$(date "+%F %T")" "$chrom" >&2
   temporary="${COVERAGE_DIR}.${chrom}.tmp.$$"
+  trap '\''rm -f "$temporary"'\'' EXIT
   "$SAMTOOLS_BIN" depth -r "$chrom" "$BAM" > "$temporary"
   mv -f "$temporary" "${COVERAGE_DIR}${chrom}"
+  trap - EXIT
 ' _
 
 : > "$TEMP_COV"
