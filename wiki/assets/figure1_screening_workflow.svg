@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
-  <title id="title">ORCA transcriptome-wide RNA-editing screening system</title>
+  <title id="title">Transcriptome-wide C-to-U RNA-editing screening workflow</title>
   <desc id="desc">Two evidence branches, RNA sequencing and a harmonized 293T genomic catalogue, converge through exact-allele matching to produce 3333 screening candidates.</desc>
   <defs>
     <marker id="arrow" markerWidth="10" markerHeight="10" refX="8.5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#4D4D4D"/></marker>
@@ -8,8 +8,7 @@
     </style>
   </defs>
   <rect width="1600" height="900" fill="#FFFFFF"/>
-  <text class="title" x="70" y="70">ORCA</text>
-  <text class="paneltitle" x="235" y="68">Transcriptome-wide C-to-U RNA-editing screening</text>
+  <text class="title" x="70" y="70">Transcriptome-wide C-to-U RNA-editing screening</text>
   <text class="subtitle" x="70" y="100">Replicate-aware RNA evidence combined with exact-allele genomic filtering</text>
 
   <rect class="panel" x="55" y="135" width="960" height="560" rx="18"/>
