@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="760" viewBox="0 0 1600 760">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#4D4D4D"/></marker>
+    <style>
+      .title{font-family:Arial,Helvetica,sans-serif;font-size:34px;font-weight:700;fill:#272727}.subtitle{font-family:Arial,Helvetica,sans-serif;font-size:16px;fill:#666666}.cycle{fill:#FFFFFF;stroke:#C3C9D1;stroke-width:2}.science{fill:#EEF4FB;stroke:#8BB2D9;stroke-width:2}.engineering{fill:#F0F6EF;stroke:#9DBE99;stroke-width:2}.audit{fill:#FFF7E8;stroke:#D6A955;stroke-width:2}.number{font-family:Arial,Helvetica,sans-serif;font-size:25px;font-weight:700;fill:#0F4D92}.label{font-family:Arial,Helvetica,sans-serif;font-size:17px;font-weight:700;fill:#272727}.small{font-family:Arial,Helvetica,sans-serif;font-size:13px;fill:#666666}.arrow{stroke:#4D4D4D;stroke-width:2.2;fill:none;marker-end:url(#arrow)}.phase{font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:700;fill:#4D4D4D}
+    </style>
+  </defs>
+  <rect width="1600" height="760" fill="#FFFFFF"/>
+  <text class="title" x="60" y="60">ORCA development roadmap: ten DBTL cycles</text>
+  <text class="subtitle" x="60" y="90">Scientific design, implementation stability and evidence-calibrated reporting were iterated separately</text>
+
+  <text class="phase" x="70" y="145">Scientific analysis</text>
+  <rect class="science" x="60" y="170" width="260" height="150" rx="16"/>
+  <text class="number" x="90" y="210">1</text><text class="label" x="130" y="210">RNA evidence</text><text class="small" x="90" y="245">3 treated + 3 controls</text><text class="small" x="90" y="270">replicate-aware calling</text>
+  <path class="arrow" d="M320 245 H365"/>
+  <rect class="science" x="365" y="170" width="260" height="150" rx="16"/>
+  <text class="number" x="395" y="210">2</text><text class="label" x="435" y="210">Public WGS test</text><text class="small" x="395" y="245">low mapping and 118 calls</text><text class="small" x="395" y="270">route rejected</text>
+  <path class="arrow" d="M625 245 H670"/>
+  <rect class="science" x="670" y="170" width="260" height="150" rx="16"/>
+  <text class="number" x="700" y="210">3</text><text class="label" x="740" y="210">Catalogue QC</text><text class="small" x="700" y="245">hg18 to GRCh38</text><text class="small" x="700" y="270">REF validation</text>
+  <path class="arrow" d="M930 245 H975"/>
+  <rect class="science" x="975" y="170" width="260" height="150" rx="16"/>
+  <text class="number" x="1005" y="210">4</text><text class="label" x="1045" y="210">Final integration</text><text class="small" x="1005" y="245">exact allele matching</text><text class="small" x="1005" y="270">3,333 retained</text>
+
+  <text class="phase" x="70" y="390">Engineering stability</text>
+  <rect class="engineering" x="60" y="415" width="260" height="150" rx="16"/>
+  <text class="number" x="90" y="455">5</text><text class="label" x="130" y="455">GATK metadata</text><text class="small" x="90" y="490">read groups and BAM checks</text>
+  <path class="arrow" d="M320 490 H365"/>
+  <rect class="engineering" x="365" y="415" width="260" height="150" rx="16"/>
+  <text class="number" x="395" y="455">6</text><text class="label" x="435" y="455">REDItools runtime</text><text class="small" x="395" y="490">Python 2, MPI and slots</text>
+  <path class="arrow" d="M625 490 H670"/>
+  <rect class="engineering" x="670" y="415" width="260" height="150" rx="16"/>
+  <text class="number" x="700" y="455">7</text><text class="label" x="740" y="455">Contig handling</text><text class="small" x="700" y="490">GL/KI names and coverage</text>
+  <path class="arrow" d="M930 490 H975"/>
+  <rect class="engineering" x="975" y="415" width="260" height="150" rx="16"/>
+  <text class="number" x="1005" y="455">8</text><text class="label" x="1045" y="455">Control depth</text><text class="small" x="1005" y="490">non-call versus observability</text>
+
+  <text class="phase" x="1290" y="390">Audit and delivery</text>
+  <rect class="audit" x="1280" y="415" width="260" height="150" rx="16"/>
+  <text class="number" x="1310" y="455">9</text><text class="label" x="1350" y="455">Compatibility</text><text class="small" x="1310" y="490">legacy table integration</text>
+  <path class="arrow" d="M1410 565 V610"/>
+  <rect class="audit" x="1280" y="610" width="260" height="100" rx="16"/>
+  <text class="number" x="1310" y="650">10</text><text class="label" x="1360" y="650">Audit and reporting</text><text class="small" x="1310" y="680">claims, counts and files</text>
+
+  <path class="arrow" d="M1235 245 C1370 260 1410 330 1410 415"/>
+  <path class="arrow" d="M1235 490 H1280"/>
+</svg>

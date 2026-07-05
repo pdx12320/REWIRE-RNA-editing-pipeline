@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="650" viewBox="0 0 1500 650">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#4D4D4D"/></marker>
+    <style>
+      .title{font-family:Arial,Helvetica,sans-serif;font-size:34px;font-weight:700;fill:#272727}.subtitle{font-family:Arial,Helvetica,sans-serif;font-size:16px;fill:#666666}.count{font-family:Arial,Helvetica,sans-serif;font-size:34px;font-weight:700;fill:#272727}.label{font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:700;fill:#272727}.small{font-family:Arial,Helvetica,sans-serif;font-size:14px;fill:#666666}.source{fill:#DCE9F6;stroke:#8BB2D9;stroke-width:2}.remove{fill:#F6CFCB;stroke:#B64342;stroke-width:2}.final{fill:#E6F1E4;stroke:#7FA579;stroke-width:2.5}.step{fill:#FFFFFF;stroke:#C3C9D1;stroke-width:1.8}.arrow{stroke:#4D4D4D;stroke-width:2.5;fill:none;marker-end:url(#arrow)}.dash{stroke:#767676;stroke-width:2;stroke-dasharray:7 6;fill:none}
+    </style>
+  </defs>
+  <rect width="1500" height="650" fill="#FFFFFF"/>
+  <text class="title" x="60" y="60">293T catalogue harmonisation and quality control</text>
+  <text class="subtitle" x="60" y="90">Assembly conversion is accepted only after coordinate mapping, REF validation, normalization and indexing</text>
+
+  <rect class="source" x="60" y="165" width="300" height="180" rx="18"/>
+  <text class="count" x="210" y="230" text-anchor="middle">2,914,465</text>
+  <text class="label" x="210" y="275" text-anchor="middle">Source PASS SNPs</text>
+  <text class="small" x="210" y="305" text-anchor="middle">293T_CG, build36 / hg18</text>
+
+  <path class="arrow" d="M360 255 H455"/>
+
+  <rect class="step" x="455" y="135" width="250" height="240" rx="18"/>
+  <text class="label" x="580" y="185" text-anchor="middle">CrossMap</text>
+  <text class="small" x="580" y="215" text-anchor="middle">hg18 to GRCh38</text>
+  <line class="dash" x1="490" y1="245" x2="670" y2="245"/>
+  <text class="count" x="580" y="295" text-anchor="middle">5,979</text>
+  <text class="small" x="580" y="325" text-anchor="middle">unmapped records removed</text>
+
+  <path class="arrow" d="M705 255 H800"/>
+
+  <rect class="step" x="800" y="135" width="250" height="240" rx="18"/>
+  <text class="label" x="925" y="185" text-anchor="middle">REF validation</text>
+  <text class="small" x="925" y="215" text-anchor="middle">same project GRCh38 FASTA</text>
+  <line class="dash" x1="835" y1="245" x2="1015" y2="245"/>
+  <text class="count" x="925" y="295" text-anchor="middle">22,761</text>
+  <text class="small" x="925" y="325" text-anchor="middle">REF mismatches removed</text>
+
+  <path class="arrow" d="M1050 255 H1145"/>
+
+  <rect class="final" x="1145" y="165" width="300" height="180" rx="18"/>
+  <text class="count" x="1295" y="230" text-anchor="middle">2,885,725</text>
+  <text class="label" x="1295" y="275" text-anchor="middle">Final GRCh38 SNPs</text>
+  <text class="small" x="1295" y="305" text-anchor="middle">normalized, sorted and indexed</text>
+
+  <rect class="remove" x="455" y="430" width="250" height="90" rx="14"/>
+  <text class="label" x="580" y="468" text-anchor="middle">Coordinate failure</text>
+  <text class="small" x="580" y="495" text-anchor="middle">5,979 records</text>
+
+  <rect class="remove" x="800" y="430" width="250" height="90" rx="14"/>
+  <text class="label" x="925" y="468" text-anchor="middle">Allele failure</text>
+  <text class="small" x="925" y="495" text-anchor="middle">22,761 records</text>
+
+  <text class="small" x="750" y="585" text-anchor="middle">Final arithmetic: 2,914,465 − 5,979 − 22,761 = 2,885,725</text>
+</svg>

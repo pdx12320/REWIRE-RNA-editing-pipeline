@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">ORCA transcriptome-wide RNA-editing screening system</title>
+  <desc id="desc">Two evidence branches, RNA sequencing and a harmonized 293T genomic catalogue, converge through exact-allele matching to produce 3333 screening candidates.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8.5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#4D4D4D"/></marker>
+    <style>
+      .title{font-family:Arial,Helvetica,sans-serif;font-size:42px;font-weight:700;fill:#272727}.subtitle{font-family:Arial,Helvetica,sans-serif;font-size:18px;fill:#666666}.paneltitle{font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:700;fill:#272727}.label{font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:700;fill:#272727}.body{font-family:Arial,Helvetica,sans-serif;font-size:15px;fill:#4D4D4D}.small{font-family:Arial,Helvetica,sans-serif;font-size:13px;fill:#666666}.panel{fill:#FFFFFF;stroke:#D5D9DF;stroke-width:2}.rna{fill:#EEF4FB;stroke:#8BB2D9;stroke-width:2}.cat{fill:#F0F6EF;stroke:#9DBE99;stroke-width:2}.node{fill:#FFFFFF;stroke:#C3C9D1;stroke-width:1.8}.final{fill:#FFF7E8;stroke:#D6A955;stroke-width:2.5}.arrow{stroke:#4D4D4D;stroke-width:2.4;fill:none;marker-end:url(#arrow)}.merge{stroke:#767676;stroke-width:2.2;fill:none;stroke-dasharray:8 6;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1600" height="900" fill="#FFFFFF"/>
+  <text class="title" x="70" y="70">ORCA</text>
+  <text class="paneltitle" x="235" y="68">Transcriptome-wide C-to-U RNA-editing screening</text>
+  <text class="subtitle" x="70" y="100">Replicate-aware RNA evidence combined with exact-allele genomic filtering</text>
+
+  <rect class="panel" x="55" y="135" width="960" height="560" rx="18"/>
+  <text class="paneltitle" x="85" y="180">RNA-seq evidence branch</text>
+  <text class="small" x="85" y="205">Three treated libraries and three controls processed independently</text>
+  <rect class="rna" x="85" y="230" width="900" height="415" rx="16"/>
+
+  <rect class="node" x="115" y="275" width="150" height="86" rx="12"/>
+  <text class="label" x="190" y="308" text-anchor="middle">FASTQ</text><text class="body" x="190" y="335" text-anchor="middle">six libraries</text>
+  <path class="arrow" d="M265 318 H305"/>
+  <rect class="node" x="305" y="275" width="150" height="86" rx="12"/>
+  <text class="label" x="380" y="308" text-anchor="middle">STAR</text><text class="body" x="380" y="335" text-anchor="middle">two-pass alignment</text>
+  <path class="arrow" d="M455 318 H495"/>
+  <rect class="node" x="495" y="275" width="170" height="86" rx="12"/>
+  <text class="label" x="580" y="308" text-anchor="middle">GATK</text><text class="body" x="580" y="333" text-anchor="middle">MarkDuplicates</text><text class="small" x="580" y="350" text-anchor="middle">SplitNCigarReads</text>
+  <path class="arrow" d="M665 318 H705"/>
+  <rect class="node" x="705" y="275" width="190" height="86" rx="12"/>
+  <text class="label" x="800" y="308" text-anchor="middle">REDItools2</text><text class="body" x="800" y="335" text-anchor="middle">per-sample calls</text>
+
+  <path class="arrow" d="M800 361 V410"/>
+  <rect class="node" x="665" y="410" width="230" height="86" rx="12"/>
+  <text class="label" x="780" y="443" text-anchor="middle">VEP orientation</text><text class="body" x="780" y="470" text-anchor="middle">C→T or G→A by strand</text>
+  <path class="arrow" d="M665 453 H615"/>
+  <rect class="node" x="330" y="410" width="285" height="86" rx="12"/>
+  <text class="label" x="472.5" y="443" text-anchor="middle">Replicate filtering</text><text class="body" x="472.5" y="470" text-anchor="middle">3/3 treated; 0/3 control calls</text>
+  <path class="arrow" d="M330 453 H280"/>
+  <rect class="node" x="115" y="410" width="165" height="86" rx="12"/>
+  <text class="label" x="197.5" y="443" text-anchor="middle">3,349</text><text class="body" x="197.5" y="470" text-anchor="middle">RNA candidates</text>
+
+  <text class="small" x="115" y="555">Evidence retained per replicate: coverage, alternate-read count, editing rate and call status</text>
+  <text class="small" x="115" y="585">Boundary: a control non-call is not equivalent to confirmed zero editing</text>
+
+  <rect class="panel" x="1050" y="135" width="495" height="560" rx="18"/>
+  <text class="paneltitle" x="1080" y="180">293T genomic branch</text>
+  <text class="small" x="1080" y="205">External HEK293 catalogue converted to GRCh38</text>
+  <rect class="cat" x="1080" y="230" width="435" height="415" rx="16"/>
+
+  <rect class="node" x="1120" y="270" width="355" height="70" rx="12"/>
+  <text class="label" x="1297.5" y="300" text-anchor="middle">293T_CG VCF</text><text class="small" x="1297.5" y="323" text-anchor="middle">build36 / hg18</text>
+  <path class="arrow" d="M1297.5 340 V370"/>
+  <rect class="node" x="1120" y="370" width="355" height="70" rx="12"/>
+  <text class="label" x="1297.5" y="400" text-anchor="middle">CrossMap</text><text class="small" x="1297.5" y="423" text-anchor="middle">hg18 → GRCh38</text>
+  <path class="arrow" d="M1297.5 440 V470"/>
+  <rect class="node" x="1120" y="470" width="355" height="88" rx="12"/>
+  <text class="label" x="1297.5" y="501" text-anchor="middle">Reference validation</text><text class="small" x="1297.5" y="525" text-anchor="middle">REF check, normalize, sort, index</text><text class="small" x="1297.5" y="545" text-anchor="middle">2,885,725 GRCh38 SNPs</text>
+
+  <rect class="panel" x="55" y="735" width="1490" height="120" rx="18"/>
+  <text class="paneltitle" x="85" y="780">Exact-allele integration</text>
+  <rect class="node" x="365" y="755" width="300" height="74" rx="12"/>
+  <text class="label" x="515" y="785" text-anchor="middle">RNA candidate allele</text><text class="small" x="515" y="808" text-anchor="middle">CHROM : POS : REF : ALT</text>
+  <path class="arrow" d="M665 792 H760"/>
+  <rect class="node" x="760" y="755" width="245" height="74" rx="12"/>
+  <text class="label" x="882.5" y="785" text-anchor="middle">Exact match?</text><text class="small" x="882.5" y="808" text-anchor="middle">16 overlaps excluded</text>
+  <path class="arrow" d="M1005 792 H1100"/>
+  <rect class="final" x="1100" y="755" width="370" height="74" rx="12"/>
+  <text class="label" x="1285" y="785" text-anchor="middle">3,333 screening candidates</text><text class="small" x="1285" y="808" text-anchor="middle">retained for prioritization and validation</text>
+
+  <path class="merge" d="M197.5 496 C197.5 675 515 690 515 755"/>
+  <path class="merge" d="M1297.5 558 C1297.5 680 882.5 695 882.5 755"/>
+</svg>
