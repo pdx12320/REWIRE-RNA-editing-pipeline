@@ -2,8 +2,6 @@
 
 This repository contains the dry-lab workflow used to screen transcriptome-wide C-to-U RNA-editing candidates from three treated and three control RNA-seq libraries.
 
-The pipeline combines:
-
 ```text
 RNA-seq alignment and preprocessing
 → REDItools2 substitution calling
@@ -24,44 +22,33 @@ RNA-seq alignment and preprocessing
 | Exact 293T catalogue overlaps | 16 |
 | Final catalogue-filtered screening candidates | 3,333 |
 
-The retained sites are screening candidates, not a definitive off-target list. The frozen legacy table does not contain independent depth and base counts for control non-calls, and the 293T catalogue is not matched WGS from the exact experimental batch.
-
 ## Repository map
 
 | Resource | Purpose |
 |---|---|
-| [Dry-lab wiki text](wiki/README.md) | Finished workflow, results, contribution and limitations |
-| [DBTL record](dbtl/README.md) | Separate development history with four cycles, failed tests and decisions |
-| [Pipeline guide](pipeline/README.md) | Reproducible execution steps |
+| [Dry-lab wiki](wiki/README.md) | Finished workflow, results, contribution and limitations |
+| [DBTL record](dbtl/README.md) | Ten development cycles plus failure and decision logs |
+| [Pipeline guide](pipeline/README.md) | Reproducible commands |
 | [Catalogue provenance](pipeline/CATALOGUE_PROVENANCE.md) | Source, liftover and QC |
-| [Outputs](pipeline/OUTPUTS.md) | Expected files and frozen result structure |
+| [Outputs](pipeline/OUTPUTS.md) | Expected files |
 | [Troubleshooting](pipeline/TROUBLESHOOTING.md) | Observed errors and fixes |
-| [Result summary](results/README.md) | Frozen evidence-funnel counts |
+| [Result summary](results/README.md) | Frozen counts |
 
-## DBTL folder
-
-```text
-dbtl/
-├── README.md
-├── cycle-1-rna-evidence.md
-├── cycle-2-public-wgs.md
-├── cycle-3-catalogue-harmonization.md
-├── cycle-4-final-integration.md
-├── failure-log.md
-├── decision-log.md
-└── reproducibility-checklist.md
-```
-
-The wiki intentionally omits the iterative development narrative. The DBTL folder preserves the detailed reasoning and commands without interrupting the public-facing dry-lab story.
-
-## Core implementation
+## DBTL cycles
 
 ```text
-pipeline/scripts/rna/
-    RNA processing, substitution calling and evidence integration
-
-pipeline/scripts/catalogue/
-    hg18-to-GRCh38 catalogue conversion and exact-allele filtering
+1  RNA evidence
+2  public WGS test
+3  catalogue harmonization
+4  final integration
+5  GATK read groups
+6  REDItools2 environment
+7  contigs and coverage
+8  control-depth evidence
+9  legacy compatibility
+10 audit and reporting
 ```
 
-Large FASTQ, BAM, VCF and per-site result files are excluded from version control. Scripts, QC rules and decision records are retained so that the workflow can be reproduced and audited.
+The retained sites are screening candidates. The frozen legacy table does not contain independent depth and base counts for control non-calls, and the 293T catalogue is external to the exact experimental batch.
+
+Large sequencing and intermediate files remain outside GitHub. The repository retains scripts, environment definitions, QC rules, frozen counts and decision records.
