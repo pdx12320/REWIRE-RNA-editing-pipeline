@@ -4,7 +4,7 @@ This directory contains the executable implementation behind the iGEM-ready expl
 
 ## One-sentence workflow
 
-Six RNA-seq libraries generate replicate-, control-, depth- and strand-aware C-to-U evidence; a database-released 293T variant catalogue is converted from hg18 to GRCh38 and joined to the RNA evidence by exact allele.
+Six RNA-seq libraries generate replicate-, control-call- and strand-aware C-to-U evidence; a database-released 293T variant catalogue is converted from hg18 to GRCh38 and joined to the RNA evidence by exact allele.
 
 ## Contents
 
@@ -21,7 +21,10 @@ pipeline/
 │   └── genomic_catalogue.yml
 └── scripts/
     ├── catalogue/
-    │   └── process_293T_CG_to_GRCh38.sh
+    │   ├── process_293T_CG_to_GRCh38.sh
+    │   └── filter_existing_treatment_specific_by_293T.py
+    ├── model2/
+    │   └── prepare_lamar_handoff.py
     └── rna/
         ├── download_sra_fastq.py
         ├── run_star_alignment.py
@@ -164,7 +167,7 @@ python3 pipeline/scripts/rna/run_vep_annotation.py \
   --cache /path/to/vep_cache
 ```
 
-### Candidate depth in all samples
+### Optional strict candidate-depth validation
 
 ```bash
 bash pipeline/scripts/rna/build_candidate_depth_tables.sh \
@@ -172,6 +175,8 @@ bash pipeline/scripts/rna/build_candidate_depth_tables.sh \
   "$PROJECT/vcf/CU5.17_EGFP_GC.REDItools_union.bed" \
   pipeline/config/samples.tsv
 ```
+
+This step directly measures candidate-site depth in all six BAM files. It is required for the strict one-pass integration route below. The frozen legacy result described in `results/` did not retain these independent control-depth values, so its 3,333 records are screening candidates rather than a fully depth-qualified set.
 
 ## 4. HEK293 Genome Project catalogue workflow
 
@@ -209,24 +214,28 @@ input-format normalization
 → GRCh38 REF validation and mismatch removal
 → normalization and coordinate sorting
 → bgzip/tabix indexing
-→ C>T / G>A catalogue extraction
 → QC summary and checksums
 ```
 
-Recommended integration file:
+The frozen conversion produced:
 
 ```text
-$CATALOGUE_OUT/293T_CG.GRCh38.CtoU_relevant.SNV.vcf.gz
+2,914,465 source PASS biallelic SNPs
+5,979 CrossMap-unmapped records
+22,761 GRCh38 REF mismatches removed
+2,885,725 final GRCh38 SNPs
 ```
 
-See [`CATALOGUE_PROVENANCE.md`](CATALOGUE_PROVENANCE.md) for the observed QC counts and interpretation boundary.
+See [`CATALOGUE_PROVENANCE.md`](CATALOGUE_PROVENANCE.md) for provenance and interpretation boundaries.
 
 ## 5. Final integration
 
-Run the final filter:
+### Route A: strict one-pass integration
+
+Use this route when independent candidate-depth tables exist for all six samples:
 
 ```bash
-CATALOGUE_VCF="$CATALOGUE_OUT/293T_CG.GRCh38.CtoU_relevant.SNV.vcf.gz"
+CATALOGUE_VCF="$CATALOGUE_OUT/293T_CG.GRCh38.PASS.biallelic.SNV.vcf.gz"
 
 python3 pipeline/scripts/rna/filter_c_to_u_and_compare.py \
   --manifest pipeline/config/samples.tsv \
@@ -242,14 +251,65 @@ python3 pipeline/scripts/rna/filter_c_to_u_and_compare.py \
 
 The older `--wgs-vcf` argument remains as a compatibility alias, but new analyses should use `--variant-catalogue-vcf`.
 
-## 6. Reproducibility rules
+### Route B: completed legacy treatment-specific table
+
+Use this route when a previous pipeline has already produced a treatment-specific table but the site matrix lacks `all_replicates_depth_pass` or the original `candidate_depth/` directory is unavailable:
+
+```bash
+INPUT="$PROJECT/final/CU5.17_EGFP_GC.treatment_specific.tsv.gz"
+CATALOGUE_VCF="$CATALOGUE_OUT/293T_CG.GRCh38.PASS.biallelic.SNV.vcf.gz"
+OUT="$PROJECT/final_with_293T_catalogue"
+
+python3 pipeline/scripts/catalogue/filter_existing_treatment_specific_by_293T.py \
+  --treatment-specific "$INPUT" \
+  --catalogue-vcf "$CATALOGUE_VCF" \
+  --output-dir "$OUT"
+```
+
+This compatibility route adds `genomic_catalogue_overlap`, writes retained and excluded tables separately, and does not invent control depth. The frozen run produced:
+
+```text
+treatment_specific_before_catalogue = 3349
+catalogue_overlap                    = 16
+final_treatment_specific             = 3333
+```
+
+These 3,333 records should be called **catalogue-filtered screening candidates**.
+
+## 6. Lamar handoff
+
+Generate a compact metadata table from the retained candidates:
+
+```bash
+python3 pipeline/scripts/model2/prepare_lamar_handoff.py \
+  --input "$PROJECT/final_with_293T_catalogue/CU5.17_EGFP_GC.treatment_specific.tsv.gz" \
+  --output "$PROJECT/lamar_handoff/CU5.17_EGFP_GC.Lamar_handoff_metadata.tsv"
+```
+
+Optionally extract a 101-nt transcript-oriented sequence window:
+
+```bash
+python3 pipeline/scripts/model2/prepare_lamar_handoff.py \
+  --input "$PROJECT/final_with_293T_catalogue/CU5.17_EGFP_GC.treatment_specific.tsv.gz" \
+  --output "$PROJECT/lamar_handoff/CU5.17_EGFP_GC.Lamar_handoff_101nt.tsv" \
+  --reference "$REF" \
+  --flank 50
+```
+
+Negative-strand genomic G→A sites are reverse-complemented, and the script verifies that the oriented center base is C. `median_treated_edit_rate` is the recommended provisional ranking target. It is not a valid background-corrected training label because control non-calls lack direct base counts in the frozen table.
+
+See [`../model2/README.md`](../model2/README.md) for the inference/training boundary.
+
+## 7. Reproducibility rules
 
 - Record software versions, source URLs and file checksums.
 - Use one GRCh38 FASTA across STAR, GATK, REDItools2, CrossMap output validation and bcftools normalization.
 - Preserve complete supplementary-contig identifiers, including `.1` and `.2` suffixes.
-- Do not interpret an absent control call without candidate-site depth.
+- Do not interpret an absent control call as zero editing or adequate coverage.
 - Match catalogue evidence by exact `CHROM:POS:REF:ALT`, not coordinate alone.
-- Keep catalogue-overlapping records in the complete site matrix even when they are excluded from the high-confidence set.
+- Keep catalogue-overlapping records in an exclusion table rather than deleting them silently.
+- Do not use the 16 catalogue-overlapping alleles as negative editing examples.
+- Group Lamar train/validation/test splits by gene, transcript or genomic region.
 - Keep raw data and large intermediate files outside GitHub.
 
 See [`OUTPUTS.md`](OUTPUTS.md) for expected files and [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) for known deployment issues.

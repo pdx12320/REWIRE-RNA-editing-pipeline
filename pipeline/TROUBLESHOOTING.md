@@ -60,7 +60,57 @@ Warnings about `libncursesw.so.6` or `libtinfow.so.6` usually reflect Conda libr
 
 ## A control has no REDItools2 call
 
-Do not treat the site as control-negative until candidate-site depth has been queried from the BAM. REDItools2 `-me 20` can suppress a site even when low-level alternate reads are present.
+Do not treat the site as control-negative until candidate-site depth and base counts have been queried from the BAM. REDItools2 `-me 20` can suppress a site even when lower-level alternate reads are present.
+
+For the frozen legacy result, control non-calls are retained as a stated limitation. The 3,333 retained rows are screening candidates, not a fully depth-qualified set.
+
+## `candidate_depth/` is missing
+
+The strict one-pass integration script requires:
+
+```text
+$PROJECT/candidate_depth/<sample>.candidate_depth.tsv.gz
+```
+
+Generate these files with:
+
+```bash
+bash pipeline/scripts/rna/build_candidate_depth_tables.sh \
+  "$PROJECT" \
+  "$PROJECT/vcf/CU5.17_EGFP_GC.REDItools_union.bed" \
+  pipeline/config/samples.tsv
+```
+
+If a completed legacy `treatment_specific.tsv.gz` already exists and rerunning depth validation is not intended, use the compatibility route instead:
+
+```bash
+python3 pipeline/scripts/catalogue/filter_existing_treatment_specific_by_293T.py \
+  --treatment-specific "$PROJECT/final/CU5.17_EGFP_GC.treatment_specific.tsv.gz" \
+  --catalogue-vcf /path/293T_CG.GRCh38.PASS.biallelic.SNV.vcf.gz \
+  --output-dir "$PROJECT/final_with_293T_catalogue"
+```
+
+This route does not fabricate missing depth evidence.
+
+## The site matrix lacks `all_replicates_depth_pass`
+
+This indicates that the table was produced by an older helper script rather than the current strict integration implementation. Do not rename another column or fill the missing value manually.
+
+Use the completed treatment-specific table with `filter_existing_treatment_specific_by_293T.py`, or regenerate candidate-depth tables and rerun the strict integration route from the original REDItools/VEP inputs.
+
+## Lamar handoff has empty `sequence_context`
+
+The metadata-only command intentionally leaves sequence context empty. Supply an indexed GRCh38 FASTA to extract fixed-length transcript-oriented sequence:
+
+```bash
+python3 pipeline/scripts/model2/prepare_lamar_handoff.py \
+  --input /path/CU5.17_EGFP_GC.treatment_specific.tsv.gz \
+  --output /path/CU5.17_EGFP_GC.Lamar_handoff_101nt.tsv \
+  --reference /path/GRCh38.primary_assembly.genome.fa \
+  --flank 50
+```
+
+This mode requires `pysam` and verifies that the oriented center base is C.
 
 ## `bcftools` reports `Exec format error` for `293T_CG.vcf`
 
