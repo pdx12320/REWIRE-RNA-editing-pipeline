@@ -11,14 +11,26 @@ The workflow has two evidence branches:
 - **RNA evidence:** three treated libraries and three controls are aligned, processed and screened independently for reproducible, transcript-oriented C-to-U signals.
 - **293T genomic catalogue:** the database-released `293T_CG` call set is converted from NCBI build 36/hg18 to GRCh38, validated against the same reference FASTA and used as an exact-allele exclusion flag.
 
-The branches are integrated by exact `CHROM:POS:REF:ALT` matching. Catalogue-overlapping sites remain in the complete site matrix but are excluded from the high-confidence treatment-specific set.
+The branches are integrated by exact `CHROM:POS:REF:ALT` matching. Catalogue-overlapping sites remain auditable but are excluded from the high-confidence treatment-specific set.
+
+## Frozen Model 1 results
+
+| Evidence layer | Sites |
+|---|---:|
+| Strand-consistent site matrix | 9,930 |
+| Treated consensus | 4,778 |
+| Treatment-specific before catalogue comparison | 3,349 |
+| Exact 293T catalogue overlaps | 16 |
+| Final catalogue-filtered candidates | 3,333 |
+
+The final 3,333 sites are suitable for Lamar inference and candidate ranking after strand-oriented sequence extraction. They are not yet a complete supervised training dataset because missing control calls must not be treated as zero editing.
 
 ## Evidence required for a high-confidence candidate
 
 ```text
 called in all three treated replicates
-not called in the three controls
-covered by at least 20 reads in all six RNA-seq libraries
+not called in the three controls under the original filter
+covered by the original all-sample depth criterion
 consistent with transcript-level C-to-U editing
 absent from the selected 293T genomic catalogue
 ```
@@ -33,12 +45,14 @@ Three candidate public WGS BioSamples were evaluated, but only 19.2–26.3% of r
 
 | Resource | Contents |
 |---|---|
-| [iGEM-ready Model 1 page](wiki/README.md) | Question, design decision, method, validation, results, limitations and references |
+| [iGEM-ready Model 1 page](wiki/README.md) | Question, design decision, method, validation, frozen results, limitations and references |
+| [Frozen result summary](results/README.md) | The 9,930 → 4,778 → 3,349 → 3,333 evidence funnel |
+| [Lamar handoff](model2/README.md) | Sequence orientation, provisional labels and inference/training boundary |
 | [Editable workflow figure](wiki/assets/figure1_model1_evidence_pipeline.svg) | Vector figure for the team wiki or presentation |
 | [Pipeline implementation](pipeline/README.md) | Complete execution order and commands |
 | [Catalogue provenance](pipeline/CATALOGUE_PROVENANCE.md) | Source, assembly conversion, QC counts and interpretation boundary |
 | [Expected outputs](pipeline/OUTPUTS.md) | RNA evidence, catalogue and integrated result files |
-| [Troubleshooting](pipeline/TROUBLESHOOTING.md) | REDItools2, liftover, reference and indexing issues |
+| [Troubleshooting](pipeline/TROUBLESHOOTING.md) | REDItools2, legacy-output, liftover, reference and indexing issues |
 
 ## Reproducible implementation
 
@@ -48,7 +62,8 @@ pipeline/
 ├── env/                      Conda environment definitions
 └── scripts/
     ├── rna/                  SRA, STAR, GATK, REDItools2, VEP and evidence integration
-    └── catalogue/            hg18-to-GRCh38 conversion of the 293T_CG catalogue
+    ├── catalogue/            hg18-to-GRCh38 conversion and legacy-table filtering
+    └── model2/               Lamar handoff and optional sequence-context extraction
 ```
 
-Raw FASTQ, BAM, coverage, VCF and result files are excluded from version control. The repository contains the analysis logic and provenance needed to regenerate the final evidence tables.
+Raw FASTQ, BAM, coverage, VCF and large result tables are excluded from version control. The repository contains the analysis logic, frozen summary and provenance needed to regenerate them.
