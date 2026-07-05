@@ -1,0 +1,9 @@
+name: rewire_lamar_labels
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.11
+  - pysam
+  - samtools
