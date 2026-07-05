@@ -61,7 +61,7 @@ def parse_vep(path):
     return {k: next(iter(v)) if len(v) == 1 else 0 for k, v in strand_sets.items()}
 
 
-def parse_wgs_vcf(path):
+def parse_variant_catalogue_vcf(path):
     variants = set()
     if not path:
         return variants
@@ -75,6 +75,10 @@ def parse_wgs_vcf(path):
             for alt in p[4].split(","):
                 variants.add((norm_chrom(p[0]), int(p[1]), p[3].upper(), alt.upper()))
     return variants
+
+
+# Backward-compatible name for older callers.
+parse_wgs_vcf = parse_variant_catalogue_vcf
 
 
 def load_depth(path):
