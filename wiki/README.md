@@ -62,16 +62,6 @@ REDItools2, the parallel implementation of REDItools, scans each library indepen
 
 The edited-read threshold favours strongly supported events and may miss low-frequency editing.
 
-### GRCh38 contig-name fix
-
-Version suffixes in identifiers such as `GL000194.1` and `KI270750.1` are part of the reference name. The temporary-file parser removes only the terminal `.gz` extension:
-
-```python
-pieces = os.path.basename(little_file)[:-3].rsplit("#", 2)
-```
-
-This preserves supplementary-contig names during sorting and merging.
-
 ## 4. Transcript orientation
 
 Candidate substitutions are combined into one union VCF and annotated with the Ensembl Variant Effect Predictor.<sup>6</sup>
@@ -109,7 +99,7 @@ The final site matrix retains call status, independent depth, REDItools2 depth, 
 
 ## Validation
 
-The workflow checks FASTQ integrity, read groups, BAM sorting and indexing, duplicate metrics, completeness of REDItools2 interval files, versioned contig names, bgzip/tabix integrity, candidate depth in all six samples and exact-allele WGS overlap.
+The workflow checks FASTQ integrity, read groups, BAM sorting and indexing, duplicate metrics, completeness of REDItools2 interval files, bgzip/tabix integrity, candidate depth in all six samples and exact-allele WGS overlap.
 
 These checks make technical failure modes visible; they do not by themselves prove biological editing.
 
@@ -123,7 +113,7 @@ Model 1 prioritises sites for targeted amplicon sequencing, independent RNA-seq 
 
 ## Connection to Model 2 — Lamar
 
-The evidence matrix is also designed to provide quality-controlled labels for Model 2, our Lamar-based nucleotide sequence model. Model 1 supplies the genomic coordinate, transcript-oriented sequence context, treated and control editing fractions, replicate support, depth and WGS-overlap status for each candidate.
+The evidence matrix is designed to provide quality-controlled labels for Model 2, our **Lamar nucleotide sequence language model**. Model 1 supplies the genomic coordinate, transcript-oriented sequence context, treated and control editing fractions, replicate support, depth and WGS-overlap status for each candidate.
 
 For editing-efficiency prediction, Model 2 should use a continuous, background-corrected target rather than only a positive/negative label. One planned label is:
 
@@ -152,7 +142,7 @@ Model 2 labels inherit the uncertainty of Model 1. Predicted editing efficiency 
 
 ## Contribution
 
-Model 1 provides a fixed three-treated/three-control evidence design, coverage-balanced REDItools2 calling, recovery of versioned GRCh38 contigs, transcript-oriented interpretation, independent control-depth assessment, an exact-allele public WGS blacklist and a structured label source for Lamar-based efficiency modelling.
+Model 1 provides a fixed three-treated/three-control evidence design, coverage-balanced REDItools2 calling, transcript-oriented interpretation, independent control-depth assessment, an exact-allele public WGS blacklist and a structured label source for the Lamar nucleotide sequence language model.
 
 ## References
 
