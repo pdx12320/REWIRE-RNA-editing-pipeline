@@ -21,7 +21,7 @@ The conversion script performs the following deterministic operations:
 4. Remove records that cannot be mapped.
 5. Validate REF alleles against the project GRCh38 FASTA with `bcftools norm -c x`.
 6. Normalize, coordinate-sort, bgzip-compress and tabix-index the VCF.
-7. Extract a C-to-U-relevant subset containing genomic C→T and G→A alleles.
+7. Optionally extract a C-to-U-relevant subset containing genomic C→T and G→A alleles.
 8. Write summary statistics and SHA-256 checksums.
 
 ## Observed QC from the frozen conversion
@@ -36,7 +36,7 @@ The conversion script performs the following deterministic operations:
 
 These counts are an audit target for the specific source file and reference used in this project. A materially different count should trigger inspection of the input VCF, chain file, GRCh38 FASTA and software versions.
 
-## Files used for integration
+## Files available for integration
 
 Full normalized catalogue:
 
@@ -45,12 +45,14 @@ Full normalized catalogue:
 293T_CG.GRCh38.PASS.biallelic.SNV.vcf.gz.tbi
 ```
 
-Recommended C-to-U-relevant catalogue:
+Optional C-to-U-relevant subset:
 
 ```text
 293T_CG.GRCh38.CtoU_relevant.SNV.vcf.gz
 293T_CG.GRCh38.CtoU_relevant.SNV.vcf.gz.tbi
 ```
+
+The frozen compatibility run used the full normalized catalogue. Because the RNA input table already contained only transcript-oriented C-to-U candidates, exact allele matching against the full catalogue was equivalent for this use case. Sixteen of 3,349 treatment-specific candidates overlapped the catalogue, leaving 3,333 retained screening candidates.
 
 ## Interpretation boundary
 
