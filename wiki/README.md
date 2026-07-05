@@ -75,10 +75,6 @@ The final tables preserve replicate-level coverage, alternate-read count and edi
 
 The `293T_CG` catalogue from the HEK293 Genome Project was generated on build36/hg18 coordinates.<sup>1</sup> ORCA converted it to GRCh38, removed unmapped records, checked REF alleles against the project FASTA, normalized the VCF, sorted it and created a tabix index.
 
-![Figure 3. Catalogue quality control](assets/figure4_catalogue_qc.svg)
-
-**Figure 3 | Catalogue quality control.** The final reference-compatible catalogue contains 2,885,725 GRCh38 SNPs.
-
 | Processing stage | Variant count |
 |---|---:|
 | Source PASS biallelic SNPs | 2,914,465 |
@@ -98,9 +94,9 @@ Coordinate-only matching was avoided because different alternate alleles can occ
 
 ## Results
 
-![Figure 4. ORCA evidence funnel](assets/figure3_evidence_funnel.svg)
+![Figure 3. ORCA evidence funnel](assets/figure3_evidence_funnel.svg)
 
-**Figure 4 | ORCA evidence funnel.** Successive filters reduced 9,930 strand-consistent candidates to 3,333 catalogue-filtered screening candidates.
+**Figure 3 | ORCA evidence funnel.** Successive filters reduced 9,930 strand-consistent candidates to 3,333 catalogue-filtered screening candidates.
 
 | Evidence layer | Number of sites |
 |---|---:|
