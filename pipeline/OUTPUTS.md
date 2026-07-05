@@ -42,33 +42,38 @@ final/CU5.17_EGFP_GC.treated_consensus.tsv.gz
 final/CU5.17_EGFP_GC.treatment_specific.tsv.gz
 ```
 
-The site matrix retains sample-level call status, candidate depth, REDItools2 depth, alternate-read count, editing fraction and WGS overlap.
+The site matrix retains sample-level call status, candidate depth, REDItools2 depth, alternate-read count, editing fraction and `genomic_catalogue_overlap`.
 
-## WGS branch
+## 293T catalogue branch
 
 ```text
-$WGS_OUT/
-├── metadata/
-├── sra/
-├── fastq/
-├── bam/
-├── qc/
-├── vcf/
+$CATALOGUE_OUT/
+├── 293T_CG.hg18.PASS.biallelic.SNV.vcf.gz
+├── 293T_CG.hg18.PASS.biallelic.SNV.vcf.gz.tbi
+├── 293T_CG.GRCh38.PASS.biallelic.SNV.vcf.gz
+├── 293T_CG.GRCh38.PASS.biallelic.SNV.vcf.gz.tbi
+├── 293T_CG.GRCh38.CtoU_relevant.SNV.vcf.gz
+├── 293T_CG.GRCh38.CtoU_relevant.SNV.vcf.gz.tbi
 ├── logs/
+├── qc/
 └── tmp/
 ```
 
-### Merge mode
+### Recommended integration file
 
 ```text
-vcf/HEK293T_3runs.filtered.SNV.vcf.gz
+293T_CG.GRCh38.CtoU_relevant.SNV.vcf.gz
 ```
 
-### Consensus mode
+### Catalogue QC files
 
 ```text
-vcf/HEK293T_3runs.consensus2of3.SNV.vcf.gz
-vcf/HEK293T_3runs.union.SNV.vcf.gz
+qc/input_header.txt
+qc/summary.txt
+qc/293T_CG.GRCh38.stats.txt
+qc/variants_per_contig.txt
+qc/first_20_variants.tsv
+qc/checksums.sha256
 ```
 
-The two-of-three consensus is the conservative exclusion blacklist. The union is better treated as a broad annotation flag.
+The expected frozen conversion contains 2,885,725 final GRCh38 PASS biallelic SNPs, including 997,698 C→T or G→A alleles.

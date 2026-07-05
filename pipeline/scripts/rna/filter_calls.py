@@ -7,11 +7,11 @@ from filter_utils import BASE_INDEX, norm_chrom, open_text, parse_counts, parse_
 CALL_FIELDS = [
     "sample", "group", "replicate", "srr", "chrom", "position", "ref", "alt",
     "vep_strand", "coverage_q30", "mean_q", "ref_count", "alt_count",
-    "edit_rate", "all_substitutions", "wgs_variant"
+    "edit_rate", "all_substitutions", "genomic_catalogue_overlap"
 ]
 
 
-def collect_calls(manifest, reditools_dir, output_dir, vep, wgs):
+def collect_calls(manifest, reditools_dir, output_dir, vep, catalogue_variants):
     all_calls = defaultdict(dict)
     sample_dir = Path(output_dir) / "sample_calls"
     sample_dir.mkdir(parents=True, exist_ok=True)
@@ -57,7 +57,9 @@ def collect_calls(manifest, reditools_dir, output_dir, vep, wgs):
                         "alt_count": alt_count,
                         "edit_rate": "{:.8g}".format(alt_count / float(denom) if denom else 0.0),
                         "all_substitutions": row["AllSubs"],
-                        "wgs_variant": int((norm_chrom(chrom), pos, r, alt) in wgs),
+                        "genomic_catalogue_overlap": int(
+                            (norm_chrom(chrom), pos, r, alt) in catalogue_variants
+                        ),
                     }
                     writer.writerow(rec)
                     all_calls[(chrom, pos, r, alt)][sample] = rec

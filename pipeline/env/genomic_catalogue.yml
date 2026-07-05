@@ -1,17 +1,12 @@
-name: rewire_wgs
+name: rewire_catalogue
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
   - python=3.11
-  - sra-tools
-  - bwa
-  - bwa-mem2
-  - samtools
+  - crossmap
   - bcftools
-  - gatk4
+  - samtools
   - htslib
-  - pigz
   - curl
-  - openjdk=17
