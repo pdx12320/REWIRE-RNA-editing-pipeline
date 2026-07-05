@@ -1,4 +1,4 @@
-# Model 1 frozen result summary
+# Frozen result summary
 
 The current CU5.17 EGFP-GC analysis produced:
 
@@ -10,14 +10,8 @@ The current CU5.17 EGFP-GC analysis produced:
 | Exact alleles overlapping the GRCh38-harmonized `293T_CG` catalogue | 16 |
 | Final catalogue-filtered screening candidates | 3,333 |
 
-The catalogue comparison used exact `CHROM:POS:REF:ALT` matching against
-`293T_CG.GRCh38.PASS.biallelic.SNV.vcf.gz`, which contains 2,885,725 alleles.
+The catalogue comparison used exact `CHROM:POS:REF:ALT` matching against `293T_CG.GRCh38.PASS.biallelic.SNV.vcf.gz`, which contains 2,885,725 alleles.
 
-The frozen legacy result table does not contain independent candidate-site
-depth and base counts for control non-calls. The 3,333 retained records are
-therefore a screening set for Lamar inference and experimental prioritization,
-not a fully depth-qualified off-target set.
+The frozen legacy table does not contain independent candidate-site depth and base counts for control non-calls. The 3,333 retained records are therefore a screening set for experimental prioritization, not a fully depth-qualified off-target set.
 
-Large per-site output tables are not committed here. The compact summary is
-stored in `model1_final_summary.tsv`, and the pipeline scripts regenerate the
-full tables.
+Large per-site tables are not committed. The compact counts are stored in [`final_summary.tsv`](final_summary.tsv), and the pipeline scripts regenerate the full outputs.
