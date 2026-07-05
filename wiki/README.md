@@ -4,7 +4,7 @@
 
 REWIRE recruits a cytidine deaminase to a selected RNA target. Reporter editing establishes on-target activity, but not transcriptome-wide specificity. Model 1 asks:
 
-> **Which C-to-U signals are reproducible after treatment, adequately measured in controls, consistent with transcript orientation and not readily explained by known 293T genomic variation?**
+> **Which C-to-U signals are reproducible after treatment, absent from control calls, consistent with transcript orientation and not readily explained by known 293T genomic variation?**
 
 Model 1 produces an auditable set of treatment-associated RNA-editing candidates. It does not claim that every retained mismatch is a biological off-target.
 
@@ -27,10 +27,10 @@ The final workflow therefore uses the `293T_CG` VCF from the [HEK293 Genome Proj
 
 The genomic catalogue is `293T_CG.vcf.gz`, generated with the Complete Genomics pipeline and released in build36/hg18 coordinates.<sup>1</sup>
 
-## Assumptions
+## Assumptions and boundaries
 
 1. A mismatch is not automatically an editing event.
-2. A missing control call is not negative evidence unless the coordinate has sufficient control depth.
+2. A missing control call is not equivalent to zero editing or adequate control coverage.
 3. Transcript-level C-to-U appears as genomic C→T on positive-strand transcripts and G→A on negative-strand transcripts.
 4. The 293T catalogue is external evidence, not WGS matched to the exact CU5.17 cell batch.
 5. hg18 and GRCh38 coordinates cannot be compared without assembly harmonization.
@@ -39,7 +39,7 @@ The genomic catalogue is `293T_CG.vcf.gz`, generated with the Complete Genomics 
 
 ![Figure 1. RNA-editing evidence generation pipeline](assets/figure1_model1_evidence_pipeline.svg)
 
-**Figure 1 | RNA-editing evidence generation pipeline.** **a,** RNA-seq produces replicate-, control-, depth- and strand-aware evidence. **b,** The HEK293 Genome Project catalogue is converted from hg18 to GRCh38 and reference-validated. **c,** The branches are joined by `CHROM:POS:REF:ALT` to generate candidates for orthogonal validation.
+**Figure 1 | RNA-editing evidence generation pipeline.** **a,** RNA-seq produces replicate-, control-call- and strand-aware evidence; all-sample candidate depth is a recommended validation layer. **b,** The HEK293 Genome Project catalogue is converted from hg18 to GRCh38 and reference-validated. **c,** The branches are joined by `CHROM:POS:REF:ALT` to generate a catalogue-filtered screening set for downstream ranking and orthogonal validation.
 
 # Method
 
@@ -71,9 +71,11 @@ negative-strand transcript: genomic G→A
 
 Sites assigned to transcripts on both orientations are marked as ambiguous.
 
-## 4. Control evidence
+## 4. Treated/control call comparison
 
-Every union candidate is queried directly in all six BAM files using base quality ≥30 and mapping quality ≥20. This separates **not called despite sufficient depth** from **not observed because the sample was uninformative**.
+The frozen screening table retains sites called in all three treated replicates and not called in any of the three controls under the original REDItools2 filtering settings. Because the final legacy output does not contain independent candidate-site depth and base counts for the uncalled controls, these records are treated as **screening candidates**, not as proof of control absence.
+
+A stricter future gate should query each candidate directly in all six BAM files. This distinguishes **not called despite sufficient depth** from **not observed because the sample was uninformative**.
 
 ## 5. 293T catalogue harmonization
 
@@ -86,23 +88,22 @@ Every union candidate is queried directly in all six BAM files using base qualit
 3. removes unmapped records;
 4. validates REF alleles against the project GRCh38 FASTA;
 5. removes REF mismatches, normalizes, sorts and tabix-indexes the VCF;
-6. extracts a C→T/G→A subset for C-to-U analysis.
+6. performs exact `CHROM:POS:REF:ALT` comparison with RNA candidates.
 
-**Role.** The catalogue marks exact RNA alleles that are plausible genomic variants. These records remain in the complete site matrix but are excluded from the high-confidence core set.
+**Role.** The catalogue marks RNA alleles that are plausible genomic variants. These records are retained in an exclusion table rather than silently discarded.
 
-## 6. Evidence integration
+## 6. Exact-allele integration
 
-The default high-confidence definition requires:
+For the frozen result set, the implemented screening definition is:
 
 ```text
 called in all three treated replicates
-AND called in no control replicate
-AND candidate-site depth ≥20 in all six RNA-seq libraries
+AND called in no control replicate under the original REDItools2 filter
 AND transcript orientation consistent with C-to-U editing
 AND exact CHROM:POS:REF:ALT absent from the 293T catalogue
 ```
 
-The final site matrix retains sample-level call status, independent depth, REDItools2 coverage, alternate-read count, editing fraction and catalogue overlap.
+This definition should not be conflated with a fully depth-qualified high-confidence off-target set.
 
 ## Catalogue quality control
 
@@ -112,22 +113,36 @@ The final site matrix retains sample-level call status, independent depth, REDIt
 | CrossMap-unmapped records | 5,979 |
 | GRCh38 REF mismatches removed | 22,761 |
 | Final GRCh38 PASS biallelic SNPs | 2,885,725 |
-| C→T or G→A catalogue alleles | 997,698 |
 
 The final VCF is coordinate-sorted, bgzip-compressed, tabix-indexed and validated against the same GRCh38 FASTA used for the RNA branch.
 
+# Results
+
+The evidence funnel produced:
+
+| Evidence layer | Sites |
+|---|---:|
+| Strand-consistent site matrix | 9,930 |
+| Called in all three treated replicates | 4,778 |
+| Treatment-specific before catalogue comparison | 3,349 |
+| Exact alleles overlapping the GRCh38-harmonized 293T catalogue | 16 |
+| Final catalogue-filtered screening candidates | 3,333 |
+
+Thus, exact catalogue comparison removed 16 of the 3,349 treatment-specific candidates, leaving 3,333 candidates for sequence-context analysis, Lamar inference and experimental prioritization.
+
+The final output is not described as a definitive off-target list because independent depth and base counts for the uncalled controls are absent from the frozen table.
+
 ## Validation and reporting
 
-The workflow checks FASTQ integrity, BAM read groups and indexing, duplicate metrics, REDItools2 interval completeness, depth in all six samples, VEP orientation, liftover success, GRCh38 REF compatibility and exact-allele catalogue overlap.
+The implemented workflow checks FASTQ integrity, BAM read groups and indexing, duplicate metrics, REDItools2 interval completeness, VEP orientation, liftover success, GRCh38 REF compatibility and exact-allele catalogue overlap.
 
-The final report should provide:
+The complete report should preserve:
 
-- strand-consistent candidate count;
-- treated and control replicate support;
-- minimum depth across all six libraries;
-- catalogue-overlap count;
-- the final high-confidence set;
-- the complete site matrix, including excluded records.
+- the 3,333 retained screening candidates;
+- the 16 catalogue-overlapping exclusions;
+- treated replicate coverage, alternate-read count and editing rate;
+- strand orientation and exact genomic allele;
+- the limitation that control non-calls lack independent depth evidence.
 
 ## Wet-lab integration
 
@@ -135,16 +150,17 @@ Model 1 prioritizes candidates for targeted amplicon sequencing, independent RNA
 
 ## Connection to Model 2 — Lamar
 
-Model 1 provides genomic coordinates, transcript-oriented sequence context, treated and control editing fractions, replicate support, depth and catalogue-overlap status. A continuous label can be defined as:
+The 3,333 retained records can be used immediately for Lamar **inference and ranking** after fixed-length transcript-oriented sequence extraction. Positive-strand C→T sites retain the genomic sequence orientation; negative-strand G→A sites must be reverse-complemented so that the center is transcript-level C.
 
-```python
-corrected_efficiency = max(
-    0.0,
-    median_treated_editing_rate - median_control_editing_rate
-)
-```
+For this frozen table, `median_treated_edit_rate` is the recommended provisional continuous target because it is robust across the three treated replicates. However, control edit rates are missing because the control sites were not called. Missing values must not be converted to zero.
 
-Training and evaluation should be separated by gene, transcript or genomic region rather than by random rows to reduce sequence leakage.
+Therefore, model fine-tuning requires additional data:
+
+- direct control-site base counts and depth at the same coordinates;
+- sufficiently covered low-editing or unedited background sites;
+- gene-, transcript- or region-grouped train/validation/test splits to reduce sequence leakage.
+
+The 16 catalogue-overlapping alleles are exclusions, not negative editing examples.
 
 ## Limitations
 
@@ -152,11 +168,13 @@ RNA-seq mismatches may reflect genomic variants, alignment ambiguity, sequencing
 
 Retained sites should be described as:
 
-> **treatment-associated RNA-editing candidates filtered against an external 293T genomic-variant catalogue**
+> **catalogue-filtered treatment-associated C-to-U screening candidates**
+
+They should not be described as definitively SNV-free off-targets or fully depth-qualified editing events.
 
 ## Contribution
 
-Model 1 combines a fixed three-treated/three-control design, coverage-qualified REDItools2 calling, transcript-oriented interpretation, independent control-depth assessment and reproducible harmonization of a 293T genomic catalogue. The result is an auditable evidence layer for wet-lab prioritization and downstream sequence modelling.
+Model 1 combines a fixed three-treated/three-control call design, transcript-oriented interpretation, reproducible harmonization of a 293T genomic catalogue and exact-allele integration. The result is an auditable screening layer for wet-lab prioritization and downstream Lamar inference, with the remaining control-depth uncertainty stated explicitly.
 
 ## References
 
