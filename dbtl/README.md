@@ -1,32 +1,33 @@
 # Design–Build–Test–Learn record
 
-This folder documents how the final RNA-editing screening workflow was developed. It is intentionally separated from the iGEM-facing wiki page: the wiki presents the finished method and results, whereas this folder records failed approaches, implementation changes, diagnostic evidence and the reasoning behind each decision.
+This folder records how the RNA-editing screening workflow developed. The wiki presents the finished method and results; this folder keeps the iterative analysis, implementation changes, failures and decisions.
 
-## Project objective
+## Objective
 
-The dry-lab task was to identify transcript-oriented C-to-U RNA-editing screening candidates that were:
+Identify transcript-oriented C-to-U screening candidates that were called reproducibly in three treated libraries, not called in three controls under the original REDItools2 settings, consistent with transcript strand and absent from the harmonized 293T catalogue by exact allele.
 
-1. detected reproducibly in all three treated RNA-seq libraries;
-2. not called in the three controls under the original REDItools2 settings;
-3. consistent with transcript strand;
-4. absent from an assembly-harmonized 293T genomic-variant catalogue by exact `CHROM:POS:REF:ALT` matching.
+The final set remains a screening set because the frozen legacy table does not contain independent control-site depth and base counts for control non-calls.
 
-The final output is a screening set rather than a definitive off-target list. The frozen legacy result table does not retain independent control-site depth and base counts for control non-calls.
+## Ten cycles
 
-## Cycle map
-
-| Cycle | Initial question | Main test | Decision |
+| Cycle | Question | Test | Decision |
 |---|---|---|---|
-| [Cycle 1](cycle-1-rna-evidence.md) | Can RNA-seq provide reproducible transcript-oriented editing evidence? | Three treated and three control libraries processed independently | Retain replicate-aware RNA evidence and state the control-depth boundary |
-| [Cycle 2](cycle-2-public-wgs.md) | Can public WGS provide a genomic blacklist? | Three public WGS runs aligned and filtered | Reject the route because mapping and variant yield were inadequate |
-| [Cycle 3](cycle-3-catalogue-harmonization.md) | Can the HEK293 `293T_CG` catalogue replace the failed WGS route? | hg18-to-GRCh38 conversion, REF validation and QC | Adopt the catalogue after adding format, sorting and REF safeguards |
-| [Cycle 4](cycle-4-final-integration.md) | How should RNA evidence and genomic evidence be combined? | Exact-allele comparison and audit-table generation | Retain 3,333 catalogue-filtered screening candidates |
+| [1](cycle-1-rna-evidence.md) | Can RNA-seq provide reproducible editing evidence? | Process three treated and three control libraries independently | Retain replicate-aware RNA evidence |
+| [2](cycle-2-public-wgs.md) | Can public WGS provide a genomic blacklist? | Align and filter three public WGS runs | Reject the route because mapping and variant yield were inadequate |
+| [3](cycle-3-catalogue-harmonization.md) | Can `293T_CG` replace the failed WGS route? | Convert hg18 to GRCh38 and validate REF alleles | Adopt the catalogue with QC safeguards |
+| [4](cycle-4-final-integration.md) | How should RNA and genomic evidence be combined? | Exact-allele comparison | Retain 3,333 catalogue-filtered screening candidates |
+| [5](cycle-5-gatk-read-groups.md) | Can GATK preprocessing preserve sample identity? | Test read groups, BAM integrity and indexes | Validate or add read groups before duplicate handling |
+| [6](cycle-6-reditools-environment.md) | Can REDItools2 run reproducibly with Python 2 and MPI? | Test dependencies, interpreter identity and worker allocation | Freeze a dedicated environment and pass the interpreter explicitly |
+| [7](cycle-7-contigs-and-coverage.md) | Can supplementary GRCh38 contigs be handled safely? | Test GL/KI coverage jobs and filename parsing | Preserve complete contig identifiers |
+| [8](cycle-8-control-depth-evidence.md) | Does a control non-call prove absence? | Separate caller output from direct candidate depth | Keep the control-depth boundary explicit |
+| [9](cycle-9-legacy-compatibility.md) | How can the legacy table use the new catalogue? | Compare strict-schema requirements with available files | Add a narrow exact-allele compatibility route |
+| [10](cycle-10-audit-and-reporting.md) | How should the result be reported without overclaiming? | Audit claims, counts and files | Preserve exclusions and freeze evidence-calibrated terminology |
 
 ## Supporting records
 
-- [Failure log](failure-log.md): observed errors, diagnoses, fixes and retained safeguards.
-- [Decision log](decision-log.md): major methodological decisions and the evidence supporting them.
-- [Reproducibility checklist](reproducibility-checklist.md): files, versions, reference rules and checks required to repeat the analysis.
+- [Failure log](failure-log.md)
+- [Decision log](decision-log.md)
+- [Reproducibility checklist](reproducibility-checklist.md)
 
 ## Final evidence funnel
 
@@ -34,28 +35,15 @@ The final output is a screening set rather than a definitive off-target list. Th
 9,930 strand-consistent sites
 → 4,778 called in all three treated replicates
 → 3,349 treatment-specific candidates before catalogue comparison
-→ 16 exact matches to the 293T catalogue removed
-→ 3,333 final catalogue-filtered screening candidates
+→ 16 exact catalogue matches removed
+→ 3,333 final screening candidates
 ```
 
-## Relationship to the rest of the repository
+## Repository relationship
 
 ```text
-wiki/README.md
-    concise finished method, results, contribution and limitations
-
-dbtl/
-    design history, failed tests, changes and lessons
-
-pipeline/README.md
-    executable workflow and commands
-
-pipeline/scripts/rna/
-    RNA processing and evidence integration
-
-pipeline/scripts/catalogue/
-    catalogue harmonization and exact-allele filtering
-
-results/final_summary.tsv
-    frozen evidence-funnel counts
+wiki/README.md       finished method and results
+dbtl/                ten development cycles
+pipeline/            executable implementation
+results/              frozen summary
 ```
