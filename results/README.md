@@ -1,4 +1,4 @@
-# Frozen result summary
+# ORCA frozen result summary
 
 The current CU5.17 EGFP-GC analysis produced:
 
@@ -12,6 +12,6 @@ The current CU5.17 EGFP-GC analysis produced:
 
 The catalogue comparison used exact `CHROM:POS:REF:ALT` matching against `293T_CG.GRCh38.PASS.biallelic.SNV.vcf.gz`, which contains 2,885,725 alleles.
 
-The frozen legacy table does not contain independent candidate-site depth and base counts for control non-calls. The 3,333 retained records are therefore a screening set for experimental prioritization, not a fully depth-qualified off-target set.
+The frozen legacy table does not contain independent candidate-site depth and base counts for control non-calls. The 3,333 retained records are therefore an ORCA screening set for experimental prioritization, not a fully depth-qualified off-target set.
 
 Large per-site tables are not committed. The compact counts are stored in [`final_summary.tsv`](final_summary.tsv), and the pipeline scripts regenerate the full outputs.
