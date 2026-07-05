@@ -3,21 +3,38 @@ import csv
 from pathlib import Path
 
 from filter_calls import collect_calls
-from filter_utils import load_depth, norm_chrom, open_text, parse_vep, parse_wgs_vcf
+from filter_utils import load_depth, norm_chrom, open_text, parse_variant_catalogue_vcf, parse_vep
 
 
 def main():
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(
+        description="Integrate strand-aware REDItools2 calls, all-sample depth and an optional genomic variant catalogue."
+    )
     ap.add_argument("--manifest", required=True)
     ap.add_argument("--reditools-dir", required=True)
     ap.add_argument("--vep", required=True)
     ap.add_argument("--output-dir", required=True)
     ap.add_argument("--depth-dir", required=True)
-    ap.add_argument("--wgs-vcf", default="")
+    ap.add_argument(
+        "--variant-catalogue-vcf",
+        default="",
+        help="Normalized exact-allele VCF used as an external genomic-variant catalogue.",
+    )
+    ap.add_argument(
+        "--wgs-vcf",
+        default="",
+        help="Deprecated compatibility alias for --variant-catalogue-vcf.",
+    )
     ap.add_argument("--min-treated-reps", type=int, default=3)
     ap.add_argument("--max-control-called-reps", type=int, default=0)
     ap.add_argument("--min-depth-all-reps", type=int, default=20)
     args = ap.parse_args()
+
+    if args.variant_catalogue_vcf and args.wgs_vcf:
+        ap.error("use only one of --variant-catalogue-vcf and --wgs-vcf")
+    catalogue_path = args.variant_catalogue_vcf or args.wgs_vcf
+    if args.wgs_vcf:
+        print("WARNING: --wgs-vcf is deprecated; use --variant-catalogue-vcf")
 
     with open(args.manifest) as fh:
         manifest = list(csv.DictReader(fh, delimiter="\t"))
@@ -35,13 +52,14 @@ def main():
         args.reditools_dir,
         args.output_dir,
         parse_vep(args.vep),
-        parse_wgs_vcf(args.wgs_vcf),
+        parse_variant_catalogue_vcf(catalogue_path),
     )
 
     fields = [
         "chrom", "position", "ref", "alt", "vep_strand",
         "treated_called_reps", "control_called_reps",
-        "all_replicates_depth_pass", "minimum_replicate_depth", "wgs_variant"
+        "all_replicates_depth_pass", "minimum_replicate_depth",
+        "genomic_catalogue_overlap"
     ]
     for sample in samples:
         fields += [
@@ -67,8 +85,8 @@ def main():
                 all(v >= args.min_depth_all_reps for v in d.values())
             ),
             "minimum_replicate_depth": min(d.values()) if d else 0,
-            "wgs_variant": int(
-                any(bool(x["wgs_variant"]) for x in per_sample.values())
+            "genomic_catalogue_overlap": int(
+                any(bool(x["genomic_catalogue_overlap"]) for x in per_sample.values())
             ),
         }
         for sample in samples:
@@ -90,7 +108,7 @@ def main():
     specific = [
         r for r in consensus
         if int(r["control_called_reps"]) <= args.max_control_called_reps
-        and int(r["wgs_variant"]) == 0
+        and int(r["genomic_catalogue_overlap"]) == 0
     ]
     datasets = {
         "CU5.17_EGFP_GC.site_matrix.tsv.gz": rows,
