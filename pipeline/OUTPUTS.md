@@ -32,9 +32,9 @@ reditools/tables/CU517_GC_C2.txt.gz
 reditools/tables/CU517_GC_C3.txt.gz
 ```
 
-Each file should have a `.tbi` index and the expected REDItools2 header.
+Each file should have the expected REDItools2 header and a tabix index when required by downstream tools.
 
-### Strict one-pass integration outputs
+## Strict integration outputs
 
 ```text
 final/CU5.17_EGFP_GC.site_matrix.tsv.gz
@@ -42,9 +42,9 @@ final/CU5.17_EGFP_GC.treated_consensus.tsv.gz
 final/CU5.17_EGFP_GC.treatment_specific.tsv.gz
 ```
 
-When the strict route is used, the site matrix retains sample-level call status, independent candidate depth, REDItools2 coverage, alternate-read count, editing fraction and `genomic_catalogue_overlap`.
+The strict route retains sample-level call status, independent candidate depth, REDItools2 coverage, alternate-read count, editing fraction and `genomic_catalogue_overlap`.
 
-### Legacy-table compatibility outputs
+## Legacy-table compatibility outputs
 
 ```text
 final_with_293T_catalogue/
@@ -54,15 +54,15 @@ final_with_293T_catalogue/
 └── catalogue_integration_summary.tsv
 ```
 
-The frozen compatibility run contained:
+Frozen result:
 
 ```text
-treatment_specific_before_catalogue = 3349
-catalogue_overlap                    = 16
-final_treatment_specific             = 3333
+treatment-specific before catalogue    3,349
+exact catalogue overlaps                  16
+retained screening candidates          3,333
 ```
 
-The retained 3,333 rows are catalogue-filtered screening candidates. The 16 excluded rows remain available for audit and must not be treated as negative editing examples.
+The 16 excluded alleles are preserved for audit. They should not be treated as negative editing examples.
 
 ## 293T catalogue branch
 
@@ -77,13 +77,13 @@ $CATALOGUE_OUT/
 └── tmp/
 ```
 
-### Integration file used in the frozen run
+The frozen integration used:
 
 ```text
 293T_CG.GRCh38.PASS.biallelic.SNV.vcf.gz
 ```
 
-### Catalogue QC files
+Catalogue QC files:
 
 ```text
 qc/input_header.txt
@@ -94,14 +94,4 @@ qc/first_20_variants.tsv
 qc/checksums.sha256
 ```
 
-The expected frozen conversion contains 2,885,725 final GRCh38 PASS biallelic SNPs.
-
-## Lamar handoff
-
-```text
-$PROJECT/lamar_handoff/
-├── CU5.17_EGFP_GC.Lamar_handoff_metadata.tsv
-└── CU5.17_EGFP_GC.Lamar_handoff_101nt.tsv   optional sequence-context table
-```
-
-The metadata table contains the genomic allele, transcript strand, treated-replicate coverage/alternate counts/edit rates, summary statistics and a provisional `median_treated_edit_rate` label. The sequence-context table additionally contains a fixed-length transcript-oriented sequence with C at the center.
+The frozen conversion contains 2,885,725 final GRCh38 PASS biallelic SNPs.

@@ -1,5 +1,7 @@
 # Troubleshooting
 
+These fixes correspond to observed failures during development. The related DBTL decisions are recorded in [`../docs/ENGINEERING_CYCLE.md`](../docs/ENGINEERING_CYCLE.md).
+
 ## GATK reports a null read group
 
 Symptom:
@@ -66,7 +68,7 @@ For the frozen legacy result, control non-calls are retained as a stated limitat
 
 ## `candidate_depth/` is missing
 
-The strict one-pass integration script requires:
+The strict integration route requires:
 
 ```text
 $PROJECT/candidate_depth/<sample>.candidate_depth.tsv.gz
@@ -81,7 +83,7 @@ bash pipeline/scripts/rna/build_candidate_depth_tables.sh \
   pipeline/config/samples.tsv
 ```
 
-If a completed legacy `treatment_specific.tsv.gz` already exists and rerunning depth validation is not intended, use the compatibility route instead:
+If a completed legacy `treatment_specific.tsv.gz` already exists, use the compatibility route instead:
 
 ```bash
 python3 pipeline/scripts/catalogue/filter_existing_treatment_specific_by_293T.py \
@@ -94,27 +96,13 @@ This route does not fabricate missing depth evidence.
 
 ## The site matrix lacks `all_replicates_depth_pass`
 
-This indicates that the table was produced by an older helper script rather than the current strict integration implementation. Do not rename another column or fill the missing value manually.
+The table was produced by an older helper script. Do not rename another column or fill the missing value manually.
 
-Use the completed treatment-specific table with `filter_existing_treatment_specific_by_293T.py`, or regenerate candidate-depth tables and rerun the strict integration route from the original REDItools/VEP inputs.
-
-## Lamar handoff has empty `sequence_context`
-
-The metadata-only command intentionally leaves sequence context empty. Supply an indexed GRCh38 FASTA to extract fixed-length transcript-oriented sequence:
-
-```bash
-python3 pipeline/scripts/model2/prepare_lamar_handoff.py \
-  --input /path/CU5.17_EGFP_GC.treatment_specific.tsv.gz \
-  --output /path/CU5.17_EGFP_GC.Lamar_handoff_101nt.tsv \
-  --reference /path/GRCh38.primary_assembly.genome.fa \
-  --flank 50
-```
-
-This mode requires `pysam` and verifies that the oriented center base is C.
+Use `filter_existing_treatment_specific_by_293T.py`, or regenerate candidate-depth tables and rerun the strict integration route from the original REDItools and VEP inputs.
 
 ## `bcftools` reports `Exec format error` for `293T_CG.vcf`
 
-The file may be gzip-compressed even though it has a `.vcf` extension, or may contain bytes before the gzip header. The catalogue script detects the content format and writes a normalized temporary VCF before processing. Do not infer compression from the filename alone.
+The file may be gzip-compressed even though it has a `.vcf` extension. The catalogue script detects the content format before processing.
 
 Check manually with:
 
@@ -127,7 +115,7 @@ A gzip stream begins with `1f 8b 08`; a text VCF begins with `##fileformat`.
 
 ## UCSC chain download times out
 
-Download `hg18ToHg38.over.chain.gz` on another machine and copy it to the server. Verify it before rerunning:
+Download `hg18ToHg38.over.chain.gz` on another machine, copy it to the server and verify it:
 
 ```bash
 gzip -t /path/hg18ToHg38.over.chain.gz
@@ -137,7 +125,7 @@ Pass the local file explicitly with `--chain`.
 
 ## CrossMap output cannot be indexed because positions are unsorted
 
-CrossMap does not guarantee final VCF coordinate order. The catalogue script runs `bcftools sort` after REF validation and before tabix indexing. Do not index the unsorted CrossMap output directly.
+CrossMap does not guarantee coordinate order. The catalogue script runs `bcftools sort` before tabix indexing.
 
 Typical error:
 
@@ -148,20 +136,20 @@ index: failed to create index
 
 ## Liftover produces REF mismatches
 
-Some mapped records may not match the target GRCh38 REF allele. The script uses:
+Some mapped records do not match the target GRCh38 REF allele. The script removes incompatible records with:
 
 ```bash
 bcftools norm -f GRCh38.fa -c x
 ```
 
-to remove incompatible records. The frozen project conversion removed 22,761 REF-mismatch records. A substantially different count should trigger a reference and chain audit.
+The frozen conversion removed 22,761 REF-mismatch records.
 
 ## Catalogue variant count is unexpectedly small
 
-The final normalized catalogue should contain millions of SNPs, not hundreds. Check:
+The final catalogue should contain millions of SNPs:
 
 ```bash
 bcftools index -n 293T_CG.GRCh38.PASS.biallelic.SNV.vcf.gz
 ```
 
-The frozen conversion retained 2,885,725 SNPs. A small count usually indicates the wrong input file, an assembly mismatch or an inappropriate genotype/filter expression.
+The frozen conversion retained 2,885,725 SNPs. A much smaller count usually indicates the wrong input file, an assembly mismatch or an inappropriate filter.
