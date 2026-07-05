@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="650" viewBox="0 0 1500 650">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#4D4D4D"/></marker>
+    <style>
+      .title{font-family:Arial,Helvetica,sans-serif;font-size:34px;font-weight:700;fill:#272727}.subtitle{font-family:Arial,Helvetica,sans-serif;font-size:16px;fill:#666666}.count{font-family:Arial,Helvetica,sans-serif;font-size:38px;font-weight:700;fill:#272727}.label{font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:700;fill:#272727}.small{font-family:Arial,Helvetica,sans-serif;font-size:14px;fill:#666666}.stage1{fill:#DCE9F6;stroke:#8BB2D9;stroke-width:2}.stage2{fill:#C8DDF1;stroke:#6E9FCB;stroke-width:2}.stage3{fill:#E6F1E4;stroke:#9DBE99;stroke-width:2}.stage4{fill:#FFF0D3;stroke:#D6A955;stroke-width:2}.excluded{fill:#F6CFCB;stroke:#B64342;stroke-width:2}.arrow{stroke:#4D4D4D;stroke-width:2.5;fill:none;marker-end:url(#arrow)}.rule{stroke:#D5D9DF;stroke-width:1.5}
+    </style>
+  </defs>
+  <rect width="1500" height="650" fill="#FFFFFF"/>
+  <text class="title" x="60" y="60">ORCA evidence funnel</text>
+  <text class="subtitle" x="60" y="90">Successive biological and genomic filters retain one-third of the strand-consistent starting set</text>
+
+  <rect class="stage1" x="70" y="160" width="300" height="250" rx="18"/>
+  <text class="count" x="220" y="245" text-anchor="middle">9,930</text>
+  <text class="label" x="220" y="290" text-anchor="middle">Strand-consistent sites</text>
+  <text class="small" x="220" y="320" text-anchor="middle">All transcript-oriented</text>
+  <text class="small" x="220" y="342" text-anchor="middle">C-to-U candidate alleles</text>
+  <text class="small" x="220" y="385" text-anchor="middle">100% of starting set</text>
+
+  <path class="arrow" d="M370 285 H440"/>
+
+  <rect class="stage2" x="440" y="175" width="280" height="220" rx="18"/>
+  <text class="count" x="580" y="250" text-anchor="middle">4,778</text>
+  <text class="label" x="580" y="295" text-anchor="middle">Treated consensus</text>
+  <text class="small" x="580" y="325" text-anchor="middle">Called in all three</text>
+  <text class="small" x="580" y="347" text-anchor="middle">treated replicates</text>
+  <text class="small" x="580" y="380" text-anchor="middle">48.1% retained</text>
+
+  <path class="arrow" d="M720 285 H790"/>
+
+  <rect class="stage3" x="790" y="190" width="280" height="190" rx="18"/>
+  <text class="count" x="930" y="255" text-anchor="middle">3,349</text>
+  <text class="label" x="930" y="300" text-anchor="middle">Treatment-specific</text>
+  <text class="small" x="930" y="330" text-anchor="middle">No control call under</text>
+  <text class="small" x="930" y="352" text-anchor="middle">the original settings</text>
+  <text class="small" x="930" y="373" text-anchor="middle">70.1% of consensus retained</text>
+
+  <path class="arrow" d="M1070 285 H1140"/>
+
+  <rect class="stage4" x="1140" y="205" width="290" height="160" rx="18"/>
+  <text class="count" x="1285" y="262" text-anchor="middle">3,333</text>
+  <text class="label" x="1285" y="305" text-anchor="middle">Final screening set</text>
+  <text class="small" x="1285" y="333" text-anchor="middle">Catalogue-filtered candidates</text>
+  <text class="small" x="1285" y="355" text-anchor="middle">33.6% of starting set</text>
+
+  <rect class="excluded" x="1135" y="435" width="300" height="90" rx="14"/>
+  <text class="label" x="1285" y="472" text-anchor="middle">16 exact catalogue overlaps</text>
+  <text class="small" x="1285" y="500" text-anchor="middle">preserved in a separate exclusion table</text>
+  <path class="arrow" d="M1100 300 C1160 350 1210 385 1260 435"/>
+
+  <line class="rule" x1="70" y1="570" x2="1430" y2="570"/>
+  <text class="small" x="750" y="602" text-anchor="middle">Each stage answers a different question: strand consistency, replicate reproducibility, control-call specificity and genomic plausibility</text>
+</svg>
