@@ -300,3 +300,9 @@ The stringent edited-read threshold favours specificity and may miss low-frequen
 5. McLaren, W. *et al.* The Ensembl Variant Effect Predictor. *Genome Biology* **17**, 122 (2016).
 6. Zhao, H. *et al.* CrossMap. *Bioinformatics* **30**, 1006–1007 (2014).
 7. Danecek, P. *et al.* Twelve years of SAMtools and BCFtools. *GigaScience* **10**, giab008 (2021).
+
+## Code availability
+
+All source code, environment files, DBTL records, quality-control documentation and reproducibility materials are available on GitHub:
+
+**[REWIRE RNA-editing pipeline repository](https://github.com/pdx12320/REWIRE-RNA-editing-pipeline)**
