@@ -1,190 +1,103 @@
-# Model 1 — RNA-editing evidence pipeline
+# Transcriptome-wide C-to-U RNA-editing evidence pipeline
 
 ## Overview
 
-REWIRE recruits a cytidine deaminase to a selected RNA target. Reporter editing establishes on-target activity, but not transcriptome-wide specificity. Model 1 asks:
+REWIRE directs a PUF–APOBEC editor to a selected RNA target. Reporter editing confirms on-target activity, but it does not reveal transcriptome-wide off-target signals. We therefore built a screening pipeline to identify C-to-U candidates that are reproducible after treatment, absent from control calls, consistent with transcript strand and not already present in a 293T genomic-variant catalogue.
 
-> **Which C-to-U signals are reproducible after treatment, absent from control calls, consistent with transcript orientation and not readily explained by known 293T genomic variation?**
+The final output is an auditable screening set. It is not a definitive off-target list.
 
-Model 1 produces an auditable set of treatment-associated RNA-editing candidates. It does not claim that every retained mismatch is a biological off-target.
+## Final workflow
 
-## Design decision
+![RNA-editing evidence generation pipeline](assets/figure1_model1_evidence_pipeline.svg)
 
-We first evaluated three public WGS BioSamples as a possible genomic blacklist. Only 19.2–26.3% of their reads mapped to GRCh38, strict per-sample filtering retained 137–230 variants, and the two-of-three consensus contained only 118 variants. This was insufficient for genome-wide filtering.
+1. Align three treated and three control RNA-seq libraries to GRCh38.
+2. Preprocess the BAM files and call substitutions with REDItools2.
+3. Use VEP to interpret genomic C→T and G→A events in transcript orientation.
+4. Retain sites called in all three treated replicates and not called in the controls under the original filter.
+5. Remove exact `CHROM:POS:REF:ALT` matches to the GRCh38-harmonized `293T_CG` catalogue.
 
-The final workflow therefore uses the `293T_CG` VCF from the [HEK293 Genome Project](https://hek293genome.org/v2/data.php). The database call set is converted from NCBI build 36/hg18 to GRCh38, validated against the same reference used by the RNA branch and joined to RNA candidates by exact allele.
+The full commands, failure logs and implementation decisions are documented in the [engineering notebook](../docs/ENGINEERING_CYCLE.md) and [pipeline guide](../pipeline/README.md).
 
-## Input data
+## Engineering cycle
 
-| Condition | Replicate | Sample | SRA accession |
-|---|---:|---|---|
-| Treated | 1 | CU517_GC_T1 | SRR27885768 |
-| Treated | 2 | CU517_GC_T2 | SRR27885766 |
-| Treated | 3 | CU517_GC_T3 | SRR27885765 |
-| Control | 1 | CU517_GC_C1 | SRR27885767 |
-| Control | 2 | CU517_GC_C2 | SRR27885764 |
-| Control | 3 | CU517_GC_C3 | SRR27885763 |
+### Cycle 1 — Establish the RNA evidence branch
 
-The genomic catalogue is `293T_CG.vcf.gz`, generated with the Complete Genomics pipeline and released in build36/hg18 coordinates.<sup>1</sup>
+**Design.** Analyse each replicate independently so that reproducibility remains visible.
 
-## Assumptions and boundaries
+**Build.** We combined STAR, GATK, REDItools2 and VEP to generate strand-consistent candidate alleles.
 
-1. A mismatch is not automatically an editing event.
-2. A missing control call is not equivalent to zero editing or adequate control coverage.
-3. Transcript-level C-to-U appears as genomic C→T on positive-strand transcripts and G→A on negative-strand transcripts.
-4. The 293T catalogue is external evidence, not WGS matched to the exact CU5.17 cell batch.
-5. hg18 and GRCh38 coordinates cannot be compared without assembly harmonization.
+**Test.** The pipeline produced 9,930 strand-consistent sites. Of these, 4,778 were called in all three treated replicates, and 3,349 were not called in any control under the original REDItools2 filter.
 
-## Workflow
+**Learn.** A control non-call is not the same as zero editing. The retained sites therefore remain screening candidates unless control-site depth and base counts are measured directly.
 
-![Figure 1. RNA-editing evidence generation pipeline](assets/figure1_model1_evidence_pipeline.svg)
+### Cycle 2 — Test public WGS as a blacklist
 
-**Figure 1 | RNA-editing evidence generation pipeline.** **a,** RNA-seq produces replicate-, control-call- and strand-aware evidence; all-sample candidate depth is a recommended validation layer. **b,** The HEK293 Genome Project catalogue is converted from hg18 to GRCh38 and reference-validated. **c,** The branches are joined by `CHROM:POS:REF:ALT` to generate a catalogue-filtered screening set for downstream ranking and orthogonal validation.
+**Design.** We first attempted to reconstruct a 293T genomic blacklist from three public WGS runs.
 
-# Method
+**Build.** The runs were aligned and filtered separately, then compared by exact allele.
 
-## 1. RNA-seq alignment and preprocessing
+**Test.** Only 19.2–26.3% of reads mapped to GRCh38. The two-of-three consensus contained 118 variants.
 
-Paired-end reads are aligned to the GRCh38 primary assembly with STAR in two-pass mode.<sup>2</sup> GATK `MarkDuplicates` records PCR and optical duplicates, and `SplitNCigarReads` processes reads spanning splice junctions.<sup>3</sup> Each final BAM must be sorted, indexed and readable.
+**Learn.** This catalogue was too sparse for genome-wide exclusion, so the public-WGS route was removed from the final workflow.
 
-## 2. Substitution calling
+### Cycle 3 — Harmonize the 293T_CG catalogue
 
-REDItools2 scans each library independently.<sup>4</sup> The core settings are:
+**Design.** Replace the failed WGS reconstruction with the database-released `293T_CG` VCF from the HEK293 Genome Project.<sup>1</sup>
 
-| Setting | Interpretation |
-|---|---|
-| `-S` | report positions containing a substitution |
-| `-me 20` | require at least 20 edited reads at a reported position |
-| mapping quality | discard reads below 20 |
-| base quality | discard bases below 30 |
+**Build.** The source VCF was filtered, lifted from hg18 to GRCh38 with CrossMap, checked against the project FASTA, normalized, sorted and indexed.
 
-The edited-read threshold favours strongly supported events and may miss low-frequency editing.
+**Test.** The conversion retained 2,885,725 GRCh38 SNPs. During development, we also detected a compressed VCF with a misleading extension, a failed chain download, unsorted CrossMap output and 22,761 REF mismatches.
 
-## 3. Transcript orientation
+**Learn.** The final script detects compression from file content, accepts a local chain file, validates REF alleles and sorts before indexing.
 
-Union candidates are annotated with Ensembl VEP.<sup>5</sup>
+### Cycle 4 — Integrate and audit
 
-```text
-positive-strand transcript: genomic C→T
-negative-strand transcript: genomic G→A
-```
+**Design.** Compare RNA candidates with the catalogue by exact allele and keep excluded records for audit.
 
-Sites assigned to transcripts on both orientations are marked as ambiguous.
+**Build.** A compatibility filter was added for the completed legacy treatment-specific table, which lacked the newer depth-summary column.
 
-## 4. Treated/control call comparison
+**Test.** Sixteen of 3,349 treatment-specific candidates matched the 293T catalogue, leaving 3,333 retained sites.
 
-The frozen screening table retains sites called in all three treated replicates and not called in any of the three controls under the original REDItools2 filtering settings. Because the final legacy output does not contain independent candidate-site depth and base counts for the uncalled controls, these records are treated as **screening candidates**, not as proof of control absence.
+**Learn.** Catalogue overlap supports exclusion as a plausible genomic variant, but catalogue absence does not prove that a site is SNV-free in the exact experimental subline.
 
-A stricter future gate should query each candidate directly in all six BAM files. This distinguishes **not called despite sufficient depth** from **not observed because the sample was uninformative**.
-
-## 5. 293T catalogue harmonization
-
-**Motivation.** The source catalogue uses hg18 while the RNA branch uses GRCh38.
-
-**Mechanism.** The workflow:
-
-1. retains PASS biallelic SNPs with a non-reference genotype;
-2. converts hg18 coordinates to GRCh38 using the UCSC `hg18ToHg38` chain and CrossMap;<sup>6,7</sup>
-3. removes unmapped records;
-4. validates REF alleles against the project GRCh38 FASTA;
-5. removes REF mismatches, normalizes, sorts and tabix-indexes the VCF;
-6. performs exact `CHROM:POS:REF:ALT` comparison with RNA candidates.
-
-**Role.** The catalogue marks RNA alleles that are plausible genomic variants. These records are retained in an exclusion table rather than silently discarded.
-
-## 6. Exact-allele integration
-
-For the frozen result set, the implemented screening definition is:
-
-```text
-called in all three treated replicates
-AND called in no control replicate under the original REDItools2 filter
-AND transcript orientation consistent with C-to-U editing
-AND exact CHROM:POS:REF:ALT absent from the 293T catalogue
-```
-
-This definition should not be conflated with a fully depth-qualified high-confidence off-target set.
-
-## Catalogue quality control
-
-| Processing stage | Variant count |
-|---|---:|
-| hg18 PASS biallelic SNPs | 2,914,465 |
-| CrossMap-unmapped records | 5,979 |
-| GRCh38 REF mismatches removed | 22,761 |
-| Final GRCh38 PASS biallelic SNPs | 2,885,725 |
-
-The final VCF is coordinate-sorted, bgzip-compressed, tabix-indexed and validated against the same GRCh38 FASTA used for the RNA branch.
-
-# Results
-
-The evidence funnel produced:
+## Results
 
 | Evidence layer | Sites |
 |---|---:|
 | Strand-consistent site matrix | 9,930 |
 | Called in all three treated replicates | 4,778 |
 | Treatment-specific before catalogue comparison | 3,349 |
-| Exact alleles overlapping the GRCh38-harmonized 293T catalogue | 16 |
+| Exact 293T catalogue overlaps | 16 |
 | Final catalogue-filtered screening candidates | 3,333 |
 
-Thus, exact catalogue comparison removed 16 of the 3,349 treatment-specific candidates, leaving 3,333 candidates for sequence-context analysis, Lamar inference and experimental prioritization.
-
-The final output is not described as a definitive off-target list because independent depth and base counts for the uncalled controls are absent from the frozen table.
-
-## Validation and reporting
-
-The implemented workflow checks FASTQ integrity, BAM read groups and indexing, duplicate metrics, REDItools2 interval completeness, VEP orientation, liftover success, GRCh38 REF compatibility and exact-allele catalogue overlap.
-
-The complete report should preserve:
-
-- the 3,333 retained screening candidates;
-- the 16 catalogue-overlapping exclusions;
-- treated replicate coverage, alternate-read count and editing rate;
-- strand orientation and exact genomic allele;
-- the limitation that control non-calls lack independent depth evidence.
-
-## Wet-lab integration
-
-Model 1 prioritizes candidates for targeted amplicon sequencing, independent RNA-seq or another orthogonal assay. Candidates should span multiple editing fractions and sequence contexts rather than only the highest-ranked sites.
-
-## Connection to Model 2 — Lamar
-
-The 3,333 retained records can be used immediately for Lamar **inference and ranking** after fixed-length transcript-oriented sequence extraction. Positive-strand C→T sites retain the genomic sequence orientation; negative-strand G→A sites must be reverse-complemented so that the center is transcript-level C.
-
-For this frozen table, `median_treated_edit_rate` is the recommended provisional continuous target because it is robust across the three treated replicates. However, control edit rates are missing because the control sites were not called. Missing values must not be converted to zero.
-
-Therefore, model fine-tuning requires additional data:
-
-- direct control-site base counts and depth at the same coordinates;
-- sufficiently covered low-editing or unedited background sites;
-- gene-, transcript- or region-grouped train/validation/test splits to reduce sequence leakage.
-
-The 16 catalogue-overlapping alleles are exclusions, not negative editing examples.
-
-## Limitations
-
-RNA-seq mismatches may reflect genomic variants, alignment ambiguity, sequencing artefacts, endogenous modification, repetitive sequence or batch effects. The `293T_CG` resource represents one database 293T genome and one calling pipeline; it is not matched WGS from the experimental batch. Absence from the catalogue does not prove that a site is free of genomic variation.
-
-Retained sites should be described as:
-
-> **catalogue-filtered treatment-associated C-to-U screening candidates**
-
-They should not be described as definitively SNV-free off-targets or fully depth-qualified editing events.
+The 16 catalogue-overlapping alleles were retained in a separate exclusion table. The 3,333 remaining sites form the final screening set for sequence-context analysis and experimental prioritization.
 
 ## Contribution
 
-Model 1 combines a fixed three-treated/three-control call design, transcript-oriented interpretation, reproducible harmonization of a 293T genomic catalogue and exact-allele integration. The result is an auditable screening layer for wet-lab prioritization and downstream Lamar inference, with the remaining control-depth uncertainty stated explicitly.
+This work provides:
+
+- a reproducible RNA-editing evidence pipeline for three treated and three control RNA-seq libraries;
+- strand-aware interpretation of C-to-U events;
+- a tested hg18-to-GRCh38 conversion workflow for the `293T_CG` catalogue;
+- exact-allele integration with explicit retention of excluded records;
+- a documented DBTL history showing which strategies failed, why they failed and how the workflow changed.
+
+All scripts, commands, QC counts and troubleshooting notes are available in this repository.
+
+## Limitations
+
+The final legacy table does not contain independent depth and base counts for control non-calls. The 3,333 retained records are therefore screening candidates rather than fully depth-qualified editing events.
+
+The `293T_CG` catalogue is an external 293T resource, not matched WGS from the exact experimental batch. A retained site may still represent a subline-specific genomic variant.
+
+RNA-seq mismatches can also arise from alignment ambiguity, sequencing artefacts, repetitive sequence or endogenous RNA modification. Orthogonal validation is still required.
 
 ## References
 
-1. Lin, Y.-C. *et al.* Genome dynamics of the human embryonic kidney 293 lineage in response to cell biology manipulations. *Nat. Commun.* **5**, 4767 (2014). doi:10.1038/ncomms5767
-2. Dobin, A. *et al.* STAR: ultrafast universal RNA-seq aligner. *Bioinformatics* **29**, 15–21 (2013). doi:10.1093/bioinformatics/bts635
-3. McKenna, A. *et al.* The Genome Analysis Toolkit. *Genome Res.* **20**, 1297–1303 (2010). doi:10.1101/gr.107524.110
-4. Picardi, E. & Pesole, G. REDItools. *Bioinformatics* **29**, 1813–1814 (2013). doi:10.1093/bioinformatics/btt287
-5. McLaren, W. *et al.* Ensembl Variant Effect Predictor. *Genome Biol.* **17**, 122 (2016). doi:10.1186/s13059-016-0974-4
-6. Kent, W. J. *et al.* The human genome browser at UCSC. *Genome Res.* **12**, 996–1006 (2002). doi:10.1101/gr.229102
-7. Zhao, H. *et al.* CrossMap. *Bioinformatics* **30**, 1006–1007 (2014). doi:10.1093/bioinformatics/btt730
-8. Danecek, P. *et al.* SAMtools and BCFtools. *GigaScience* **10**, giab008 (2021). doi:10.1093/gigascience/giab008
-
-**Code and reproducibility:** https://github.com/pdx12320/REWIRE-RNA-editing-pipeline
+1. Lin, Y.-C. *et al.* Genome dynamics of the human embryonic kidney 293 lineage in response to cell biology manipulations. *Nat. Commun.* **5**, 4767 (2014).
+2. Dobin, A. *et al.* STAR: ultrafast universal RNA-seq aligner. *Bioinformatics* **29**, 15–21 (2013).
+3. McKenna, A. *et al.* The Genome Analysis Toolkit. *Genome Res.* **20**, 1297–1303 (2010).
+4. Picardi, E. & Pesole, G. REDItools. *Bioinformatics* **29**, 1813–1814 (2013).
+5. McLaren, W. *et al.* The Ensembl Variant Effect Predictor. *Genome Biol.* **17**, 122 (2016).
+6. Zhao, H. *et al.* CrossMap. *Bioinformatics* **30**, 1006–1007 (2014).
+7. Danecek, P. *et al.* Twelve years of SAMtools and BCFtools. *GigaScience* **10**, giab008 (2021).
