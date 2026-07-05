@@ -1,10 +1,10 @@
-# ORCA Dry Lab — Transcriptome-wide C-to-U RNA-editing screening
+# Dry Lab — Transcriptome-wide C-to-U RNA-editing screening
 
 ## Overview
 
-ORCA is our dry-lab system for screening transcriptome-wide C-to-U RNA-editing signals. It combines three treated and three control RNA-seq libraries with an assembly-harmonized 293T genomic-variant catalogue.
+ORCA is our programmable PUF–APOBEC RNA-editing system. To evaluate its transcriptome-wide specificity, we developed a dry-lab workflow that combines three treated and three control RNA-seq libraries with an assembly-harmonized 293T genomic-variant catalogue.
 
-The goal is to identify signals that are reproducible after treatment, not called in controls under the same settings, consistent with transcript strand, and not readily explained by known 293T genomic variation. ORCA also provides the evidence and continuous labels used by the downstream LAMAR editing-efficiency model.
+The workflow identifies signals that are reproducible after treatment, not called in controls under the same settings, consistent with transcript strand, and not readily explained by known 293T genomic variation. It also provides the evidence and continuous labels used by the downstream LAMAR editing-efficiency model.
 
 ## Input data
 
@@ -21,9 +21,9 @@ Each library was processed independently so that replicate support remained visi
 
 ## Workflow
 
-![Figure 1. ORCA system overview](assets/figure1_orca_system_overview.svg)
+![Figure 1. Transcriptome-wide RNA-editing screening workflow](assets/figure1_screening_workflow.svg)
 
-**Figure 1 | ORCA system overview.** The RNA-seq branch generates replicate-aware, transcript-oriented C-to-U evidence. In parallel, the external `293T_CG` catalogue is converted from hg18 to GRCh38 and reference-validated. Exact-allele comparison then removes plausible genomic variants while preserving all exclusions for audit.
+**Figure 1 | Transcriptome-wide RNA-editing screening workflow.** The RNA-seq branch generates replicate-aware, transcript-oriented C-to-U evidence. In parallel, the external `293T_CG` catalogue is converted from hg18 to GRCh38 and reference-validated. Exact-allele comparison then removes plausible genomic variants while preserving all exclusions for audit.
 
 ```text
 RNA-seq alignment and preprocessing
@@ -58,7 +58,7 @@ These settings favour strongly supported calls and may miss low-frequency editin
 
 RNA editing must be interpreted in transcript orientation. For a positive-strand transcript, transcript-level C-to-U editing appears as genomic C-to-T. For a negative-strand transcript, the same biological event appears as genomic G-to-A because the transcript is the reverse complement of the genomic reference.
 
-VEP supplied transcript orientation.<sup>5</sup> ORCA retained only alleles consistent with these two rules. Sites assigned to conflicting transcript orientations were treated as ambiguous rather than forced into one category.
+VEP supplied transcript orientation.<sup>5</sup> The screening workflow retained only alleles consistent with these two rules. Sites assigned to conflicting transcript orientations were treated as ambiguous rather than forced into one category.
 
 ### 4. Replicate and control filtering
 
@@ -74,7 +74,7 @@ The output tables retain replicate-level coverage, alternate-read count, editing
 
 ### 5. 293T catalogue harmonization
 
-The `293T_CG` catalogue from the HEK293 Genome Project was generated on build36/hg18 coordinates.<sup>1</sup> ORCA converted it to GRCh38, removed unmapped records, checked REF alleles against the project FASTA, normalized the VCF, sorted it and created a tabix index.
+The `293T_CG` catalogue from the HEK293 Genome Project was generated on build36/hg18 coordinates.<sup>1</sup> The catalogue-processing branch converted it to GRCh38, removed unmapped records, checked REF alleles against the project FASTA, normalized the VCF, sorted it and created a tabix index.
 
 | Processing stage | Variant count |
 |---|---:|
@@ -259,11 +259,11 @@ corrected_editing_efficiency = max(
 | Exact 293T catalogue overlaps | 16 |
 | Final catalogue-filtered screening candidates | 3,333 |
 
-The 16 exact catalogue matches remain available in a separate exclusion table. The 3,333 retained sites form the final ORCA screening set for prioritization and experimental validation. They should not be interpreted as 3,333 confirmed biological off-targets.
+The 16 exact catalogue matches remain available in a separate exclusion table. The 3,333 retained sites form the final dry-lab screening set for prioritization and experimental validation of the ORCA PUF–APOBEC system. They should not be interpreted as 3,333 confirmed biological off-targets.
 
 ## Contribution
 
-ORCA provides:
+This dry-lab model provides:
 
 1. replicate-aware analysis of three treated and three control libraries;
 2. transcript-strand-aware C-to-U interpretation;
