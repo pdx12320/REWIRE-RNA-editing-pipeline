@@ -1,39 +1,40 @@
 # Pipeline implementation
 
-This directory contains the executable implementation behind the copy-ready iGEM text in [`../wiki/README.md`](../wiki/README.md).
+This directory contains the executable implementation behind the iGEM-ready explanation in [`../wiki/README.md`](../wiki/README.md).
+
+## One-sentence workflow
+
+Six RNA-seq libraries generate replicate-, control-, depth- and strand-aware C-to-U evidence; a database-released 293T variant catalogue is converted from hg18 to GRCh38 and joined to the RNA evidence by exact allele.
 
 ## Contents
 
 ```text
 pipeline/
 ├── README.md
+├── CATALOGUE_PROVENANCE.md
 ├── OUTPUTS.md
 ├── TROUBLESHOOTING.md
 ├── config/
-│   ├── samples.tsv
-│   └── wgs_runs.tsv
+│   └── samples.tsv
 ├── env/
 │   ├── reditools2_py2.yml
-│   └── wgs_pipeline.yml
+│   └── genomic_catalogue.yml
 └── scripts/
-    ├── rna/
-    │   ├── download_sra_fastq.py
-    │   ├── run_star_alignment.py
-    │   ├── run_gatk_preprocessing.py
-    │   ├── generate_reditools_coverage_limited.sh
-    │   ├── run_reditools_all_samples.sh
-    │   ├── rebuild_reditools_file_list.py
-    │   ├── reditools_union_to_vcf.py
-    │   ├── run_vep_annotation.py
-    │   ├── build_candidate_depth_tables.sh
-    │   ├── filter_c_to_u_and_compare.py
-    │   ├── filter_calls.py
-    │   └── filter_utils.py
-    └── wgs/
-        ├── 00_check_sra_metadata.sh
-        ├── run_3run_wgs_pipeline.sh
-        ├── filter_single_sample_vcf.py
-        └── build_consensus_blacklist.py
+    ├── catalogue/
+    │   └── process_293T_CG_to_GRCh38.sh
+    └── rna/
+        ├── download_sra_fastq.py
+        ├── run_star_alignment.py
+        ├── run_gatk_preprocessing.py
+        ├── generate_reditools_coverage_limited.sh
+        ├── run_reditools_all_samples.sh
+        ├── rebuild_reditools_file_list.py
+        ├── reditools_union_to_vcf.py
+        ├── run_vep_annotation.py
+        ├── build_candidate_depth_tables.sh
+        ├── filter_c_to_u_and_compare.py
+        ├── filter_calls.py
+        └── filter_utils.py
 ```
 
 ## 1. Required software
@@ -50,16 +51,16 @@ pipeline/
 - VEP with an offline GRCh38 cache
 - Python 3
 
-### WGS branch
+### 293T catalogue branch
 
 ```bash
-conda env create -f pipeline/env/wgs_pipeline.yml
-conda activate rewire_wgs
+conda env create -f pipeline/env/genomic_catalogue.yml
+conda activate rewire_catalogue
 ```
 
-### REDItools2 environment
+This environment provides CrossMap, bcftools, samtools, bgzip and tabix. BWA, GATK and SRA Toolkit are not required for the catalogue branch because the input is an existing VCF rather than raw WGS reads.
 
-The provided YAML creates a minimal Python 2.7 environment:
+### REDItools2 environment
 
 ```bash
 conda env create -f pipeline/env/reditools2_py2.yml
@@ -84,11 +85,13 @@ python -m pip install --no-cache-dir --no-binary=mpi4py "mpi4py==3.0.3"
 
 Use the same MPI implementation for `mpirun`, `mpicc` and the compiled `mpi4py` module.
 
-## 2. Fixed inputs
+## 2. Fixed inputs and reference rule
 
-RNA samples are stored in [`config/samples.tsv`](config/samples.tsv). Public HEK293T WGS runs are stored in [`config/wgs_runs.tsv`](config/wgs_runs.tsv).
+RNA samples are stored in [`config/samples.tsv`](config/samples.tsv).
 
-All branches must use the same GRCh38 FASTA and chromosome naming convention. Do not mix `chr1` and `1`, or GRCh37 and GRCh38 coordinates, without explicit normalisation.
+The genomic catalogue input is `293T_CG.vcf.gz` from the [HEK293 Genome Project data page](https://hek293genome.org/v2/data.php). The source file uses NCBI build 36/hg18 and must be converted before comparison with GRCh38 RNA-seq results.
+
+All modules must use the same GRCh38 FASTA and chromosome naming convention. Do not mix `chr1` and `1`, or hg18 and GRCh38 coordinates, without explicit harmonization.
 
 ## 3. RNA-seq workflow
 
@@ -170,71 +173,83 @@ bash pipeline/scripts/rna/build_candidate_depth_tables.sh \
   pipeline/config/samples.tsv
 ```
 
-## 4. Public HEK293T WGS workflow
+## 4. HEK293 Genome Project catalogue workflow
 
-Check whether the three runs share one BioSample:
-
-```bash
-bash pipeline/scripts/wgs/00_check_sra_metadata.sh \
-  pipeline/config/wgs_runs.tsv \
-  wgs_sra_metadata.tsv
-```
-
-Run the complete workflow:
-
-```bash
-conda activate rewire_wgs
-WGS_OUT=/data/ydx/igem/HEK293T_public_WGS_3runs
-
-nohup bash pipeline/scripts/wgs/run_3run_wgs_pipeline.sh \
-  --runs pipeline/config/wgs_runs.tsv \
-  --reference "$REF" \
-  --outdir "$WGS_OUT" \
-  --mode auto \
-  --threads 32 \
-  --min-dp 10 \
-  --min-alt 3 \
-  --min-vaf 0.05 \
-  --min-qual 20 \
-  > "$WGS_OUT.pipeline.log" 2>&1 &
-```
-
-`auto` merges runs only when the metadata indicate one BioSample. Otherwise it creates per-run call sets and a two-of-three exact-allele consensus blacklist.
-
-## 5. Final integration
-
-Choose the WGS blacklist produced by the resolved mode:
+Download the following two files outside the repository:
 
 ```text
-merge mode:
-  $WGS_OUT/vcf/HEK293T_3runs.filtered.SNV.vcf.gz
-
-consensus mode:
-  $WGS_OUT/vcf/HEK293T_3runs.consensus2of3.SNV.vcf.gz
+293T_CG.vcf.gz                  HEK293 Genome Project data page
+hg18ToHg38.over.chain.gz        UCSC liftOver chain
 ```
+
+The processing script accepts either a text VCF or a gzip-compressed VCF, including a compressed file that was saved with a `.vcf` extension.
+
+```bash
+conda activate rewire_catalogue
+
+CATALOGUE_IN=/data/ydx/igem/293T_CG.vcf
+CHAIN=/data/ydx/igem/hg18ToHg38.over.chain.gz
+CATALOGUE_OUT=/data/ydx/igem/293T_CG_GRCh38
+
+nohup bash pipeline/scripts/catalogue/process_293T_CG_to_GRCh38.sh \
+  --input "$CATALOGUE_IN" \
+  --reference "$REF" \
+  --chain "$CHAIN" \
+  --outdir "$CATALOGUE_OUT" \
+  --threads 16 \
+  > "$CATALOGUE_OUT.nohup.log" 2>&1 &
+```
+
+The script performs:
+
+```text
+input-format normalization
+→ PASS biallelic SNP selection
+→ CrossMap hg18-to-GRCh38 liftover
+→ GRCh38 REF validation and mismatch removal
+→ normalization and coordinate sorting
+→ bgzip/tabix indexing
+→ C>T / G>A catalogue extraction
+→ QC summary and checksums
+```
+
+Recommended integration file:
+
+```text
+$CATALOGUE_OUT/293T_CG.GRCh38.CtoU_relevant.SNV.vcf.gz
+```
+
+See [`CATALOGUE_PROVENANCE.md`](CATALOGUE_PROVENANCE.md) for the observed QC counts and interpretation boundary.
+
+## 5. Final integration
 
 Run the final filter:
 
 ```bash
+CATALOGUE_VCF="$CATALOGUE_OUT/293T_CG.GRCh38.CtoU_relevant.SNV.vcf.gz"
+
 python3 pipeline/scripts/rna/filter_c_to_u_and_compare.py \
   --manifest pipeline/config/samples.tsv \
   --reditools-dir "$PROJECT/reditools/tables" \
   --vep "$PROJECT/vep/CU5.17_EGFP_GC.vep.tsv" \
   --depth-dir "$PROJECT/candidate_depth" \
   --output-dir "$PROJECT/final" \
-  --wgs-vcf "$WGS_BLACKLIST" \
+  --variant-catalogue-vcf "$CATALOGUE_VCF" \
   --min-treated-reps 3 \
   --max-control-called-reps 0 \
   --min-depth-all-reps 20
 ```
 
+The older `--wgs-vcf` argument remains as a compatibility alias, but new analyses should use `--variant-catalogue-vcf`.
+
 ## 6. Reproducibility rules
 
-- Record software versions and reference checksums.
-- Use one GRCh38 FASTA across STAR, GATK, REDItools2, BWA and bcftools.
+- Record software versions, source URLs and file checksums.
+- Use one GRCh38 FASTA across STAR, GATK, REDItools2, CrossMap output validation and bcftools normalization.
 - Preserve complete supplementary-contig identifiers, including `.1` and `.2` suffixes.
 - Do not interpret an absent control call without candidate-site depth.
-- Match WGS evidence by exact `CHROM:POS:REF:ALT`, not coordinate alone.
+- Match catalogue evidence by exact `CHROM:POS:REF:ALT`, not coordinate alone.
+- Keep catalogue-overlapping records in the complete site matrix even when they are excluded from the high-confidence set.
 - Keep raw data and large intermediate files outside GitHub.
 
 See [`OUTPUTS.md`](OUTPUTS.md) for expected files and [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) for known deployment issues.
