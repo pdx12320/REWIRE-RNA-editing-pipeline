@@ -1,22 +1,12 @@
-# Dry Lab — Transcriptome-wide C-to-U RNA-editing screening
+# ORCA Dry Lab — Transcriptome-wide C-to-U RNA-editing screening
 
 ## Overview
 
-REWIRE uses a programmable PUF–APOBEC editor to modify a selected RNA target. Reporter assays can confirm activity at the intended site, but they cannot determine whether similar C-to-U changes occur elsewhere in the transcriptome.
+ORCA is our dry-lab system for screening transcriptome-wide C-to-U RNA-editing signals. It combines three treated and three control RNA-seq libraries with an assembly-harmonized 293T genomic-variant catalogue.
 
-We therefore developed a dry-lab pipeline that compares three treated and three control RNA-seq libraries, interprets substitutions in transcript orientation, and removes exact matches to an external 293T genomic-variant catalogue. The output is a ranked, auditable set of treatment-associated C-to-U screening candidates for downstream validation.
-
-## Aim
-
-Our pipeline was designed to answer one question:
-
-> Which transcriptome-wide C-to-U signals are reproducibly detected after treatment, absent from control calls under the same settings, consistent with transcript strand, and not readily explained by known 293T genomic variation?
-
-The analysis does not classify every retained mismatch as a confirmed off-target. Instead, it narrows a large RNA-seq call set into a smaller evidence-based screening set.
+The goal is to identify signals that are reproducible after treatment, not called in controls under the same settings, consistent with transcript strand, and not readily explained by known 293T genomic variation.
 
 ## Input data
-
-### RNA-seq libraries
 
 | Condition | Replicate | Sample | SRA accession |
 |---|---:|---|---|
@@ -27,93 +17,67 @@ The analysis does not classify every retained mismatch as a confirmed off-target
 | Control | 2 | CU517_GC_C2 | SRR27885764 |
 | Control | 3 | CU517_GC_C3 | SRR27885763 |
 
-Each library was processed independently so that replicate support remained visible throughout the analysis.
-
-### Genomic-variant catalogue
-
-We used the `293T_CG` variant catalogue released by the HEK293 Genome Project.<sup>1</sup> The source VCF was generated on NCBI build 36/hg18 coordinates, whereas the RNA-seq branch used GRCh38. We therefore converted and validated the catalogue before integration.
+Each library was processed independently so that replicate support remained visible.
 
 ## Workflow
 
-![RNA-editing evidence generation pipeline](assets/figure1_model1_evidence_pipeline.svg)
+![Figure 1. ORCA system overview](assets/figure1_orca_system_overview.svg)
 
-The pipeline contains two evidence branches:
+**Figure 1 | ORCA system overview.** RNA-seq evidence and the harmonized 293T catalogue are integrated by exact allele to produce the final screening set.
 
 ```text
-RNA-seq evidence
-    alignment → preprocessing → substitution calling
-    → transcript orientation → treated/control comparison
-
-293T genomic evidence
-    source filtering → hg18-to-GRCh38 conversion
-    → REF validation → exact-allele catalogue
-
-Final integration
-    RNA candidate CHROM:POS:REF:ALT
-    compared with catalogue CHROM:POS:REF:ALT
+RNA-seq alignment and preprocessing
+→ REDItools2 substitution calling
+→ VEP transcript-strand interpretation
+→ treated and control comparison
+→ 293T catalogue harmonization
+→ exact CHROM:POS:REF:ALT filtering
 ```
 
-## 1. RNA-seq alignment and preprocessing
+### 1. RNA-seq alignment and preprocessing
 
-Paired-end reads were aligned to the GRCh38 primary assembly with STAR in two-pass mode.<sup>2</sup> GATK `MarkDuplicates` was used to record duplicate reads, and `SplitNCigarReads` processed reads spanning splice junctions.<sup>3</sup>
+Paired-end reads were aligned to the GRCh38 primary assembly with STAR in two-pass mode.<sup>2</sup> GATK `MarkDuplicates` recorded duplicates, and `SplitNCigarReads` processed reads spanning splice junctions.<sup>3</sup>
 
-The same GRCh38 reference was used throughout the RNA and catalogue branches to avoid assembly-dependent coordinate and allele inconsistencies.
-
-## 2. Substitution calling
+### 2. Substitution calling
 
 REDItools2 was run independently for all six libraries.<sup>4</sup>
-
-Core settings were:
 
 | Parameter | Function |
 |---|---|
 | `-S` | report positions containing substitutions |
 | `-me 20` | require at least 20 edited reads for a reported call |
-| mapping quality ≥20 | remove poorly mapped reads |
-| base quality ≥30 | remove low-confidence bases |
+| mapping quality >=20 | remove poorly mapped reads |
+| base quality >=30 | remove low-confidence bases |
 
-These settings prioritised strongly supported calls. They may reduce sensitivity to low-frequency editing, but they limit the initial candidate set to sites with substantial read support.
+These settings favour strongly supported calls and may miss low-frequency editing.
 
-## 3. Transcript-oriented C-to-U interpretation
+### 3. Transcript-oriented interpretation
 
-RNA editing must be interpreted relative to transcript strand rather than genomic substitution alone. VEP was used to annotate candidate alleles and transcript orientation.<sup>5</sup>
+![Figure 2. Strand-aware interpretation](assets/figure2_strand_interpretation.svg)
 
-```text
-positive-strand transcript: genomic C→T
-negative-strand transcript: genomic G→A
-```
+**Figure 2 | Strand-aware interpretation.** Transcript-level C-to-U editing appears as genomic C-to-T on positive-strand transcripts and genomic G-to-A on negative-strand transcripts.
 
-Candidates inconsistent with transcript-level C-to-U editing were removed. Sites assigned to conflicting transcript orientations were treated as ambiguous rather than forced into one class.
+VEP supplied transcript orientation.<sup>5</sup> Candidates inconsistent with transcript-level C-to-U editing were removed, while conflicting transcript orientations were treated as ambiguous.
 
-## 4. Replicate and control filtering
+### 4. Replicate and control filtering
 
-A candidate was retained in the treatment-specific screening table when it was:
+A candidate entered the treatment-specific table when it was:
 
 ```text
 called in all three treated replicates
-AND not called in any of the three controls
+AND not called in any control replicate
 AND consistent with transcript-level C-to-U editing
 ```
 
-The final tables retain replicate-level coverage, alternate-read count and editing rate. This allows later prioritisation to consider both editing magnitude and agreement among treated replicates.
+The final tables preserve replicate-level coverage, alternate-read count and editing rate.
 
-A control non-call is not equivalent to confirmed zero editing. REDItools2 may omit lower-level events that do not reach the edited-read threshold. This point is included in the limitations below.
+### 5. 293T catalogue harmonization
 
-## 5. 293T catalogue harmonisation
+The `293T_CG` catalogue from the HEK293 Genome Project was generated on build36/hg18 coordinates.<sup>1</sup> ORCA converted it to GRCh38, removed unmapped records, checked REF alleles against the project FASTA, normalized the VCF, sorted it and created a tabix index.
 
-The source `293T_CG` VCF was processed as follows:
+![Figure 3. Catalogue quality control](assets/figure4_catalogue_qc.svg)
 
-```text
-retain PASS biallelic SNPs
-→ convert hg18 coordinates to GRCh38 with CrossMap
-→ remove unmapped records
-→ validate REF alleles against the project GRCh38 FASTA
-→ remove REF mismatches
-→ normalize and coordinate-sort
-→ bgzip-compress and tabix-index
-```
-
-Catalogue quality control produced:
+**Figure 3 | Catalogue quality control.** The final reference-compatible catalogue contains 2,885,725 GRCh38 SNPs.
 
 | Processing stage | Variant count |
 |---|---:|
@@ -122,23 +86,21 @@ Catalogue quality control produced:
 | GRCh38 REF mismatches removed | 22,761 |
 | Final GRCh38 PASS biallelic SNPs | 2,885,725 |
 
-The final catalogue is an external 293T genomic resource. It is not whole-genome sequencing matched to the exact CU5.17 experimental cell batch.
+### 6. Exact-allele integration
 
-## 6. Exact-allele integration
-
-RNA candidates were compared with the harmonised catalogue using exact:
+RNA candidates were compared with the catalogue using exact:
 
 ```text
 CHROM : POS : REF : ALT
 ```
 
-Coordinate-only matching was not used because different alternate alleles can occur at the same genomic position.
-
-Catalogue-overlapping records were written to a separate exclusion table rather than deleted silently. This preserves a complete record of which candidates were removed and why.
+Coordinate-only matching was avoided because different alternate alleles can occur at the same position. Catalogue matches were written to a separate exclusion table rather than removed silently.
 
 ## Results
 
-The successive evidence filters reduced the call set as follows:
+![Figure 4. ORCA evidence funnel](assets/figure3_evidence_funnel.svg)
+
+**Figure 4 | ORCA evidence funnel.** Successive filters reduced 9,930 strand-consistent candidates to 3,333 catalogue-filtered screening candidates.
 
 | Evidence layer | Number of sites |
 |---|---:|
@@ -148,73 +110,42 @@ The successive evidence filters reduced the call set as follows:
 | Exact 293T catalogue overlaps | 16 |
 | Final catalogue-filtered screening candidates | 3,333 |
 
-The catalogue comparison removed 16 exact alleles from the 3,349 treatment-specific candidates, leaving 3,333 retained sites.
-
-The final result is provided together with:
-
-- the full annotated pre-catalogue treatment-specific table;
-- the 16 catalogue-overlapping exclusions;
-- the 3,333 retained screening candidates;
-- a summary table recording the filtering counts.
-
-## Interpretation and use
-
-The 3,333 retained sites represent transcriptome-wide candidates that passed the implemented treated-replicate, control-call, transcript-orientation and genomic-catalogue filters.
-
-They can be used to:
-
-- prioritise loci for targeted amplicon sequencing;
-- select candidates spanning different editing rates and sequence contexts;
-- compare predicted and experimentally measured editing behaviour;
-- guide future matched-DNA and independent RNA validation.
-
-They should not be interpreted as 3,333 confirmed biological off-targets.
+The 16 exact catalogue matches remain available in a separate exclusion table. The 3,333 retained sites form the final ORCA screening set for prioritization and experimental validation.
 
 ## Contribution
 
-Our dry-lab work contributes:
+ORCA provides:
 
-1. **A replicate-aware RNA-editing workflow.** Three treated and three control libraries are analysed independently rather than pooled.
-2. **Transcript-strand-aware interpretation.** Both genomic C→T and G→A events are correctly mapped to transcript-level C-to-U editing.
-3. **A reproducible 293T catalogue conversion.** The public hg18 catalogue is converted to GRCh38, reference-validated, normalised and indexed.
-4. **Exact-allele genomic filtering.** RNA candidates are compared using `CHROM:POS:REF:ALT`, reducing coordinate-only false matches.
-5. **Auditable outputs.** Retained and excluded sites are reported separately, together with QC counts and reproducible scripts.
-
-The complete implementation, development records and troubleshooting notes are available in the project repository.
+1. replicate-aware analysis of three treated and three control libraries;
+2. transcript-strand-aware C-to-U interpretation;
+3. a reproducible hg18-to-GRCh38 293T catalogue conversion;
+4. exact-allele genomic filtering;
+5. separate retained, excluded and summary outputs;
+6. ten documented DBTL cycles covering analysis, implementation and evidence boundaries.
 
 ## Limitations
 
-### Control evidence
+The frozen legacy result does not contain independent candidate-site depth and base counts for control non-calls. A missing control call is therefore not proof of zero editing.
 
-The frozen legacy result table does not contain independent candidate-site depth and base counts for control non-calls. A site absent from the control REDItools2 table may still contain lower-level alternate reads. The retained sites are therefore described as screening candidates rather than fully depth-qualified editing events.
+The 293T catalogue is external to the exact experimental cell batch. Absence from the catalogue does not prove that a retained site is free of a subline-specific genomic variant.
 
-### Genomic evidence
+RNA-seq mismatches may also arise from alignment ambiguity, sequencing artefacts, repetitive sequence or endogenous modification. Orthogonal validation remains necessary.
 
-The `293T_CG` catalogue comes from an external 293T genome and calling pipeline. An exact overlap supports exclusion as a plausible genomic variant, but absence from the catalogue does not prove that the exact experimental subline lacks that variant.
-
-### RNA-seq evidence
-
-RNA-seq mismatches may arise from alignment ambiguity, sequencing artefacts, repetitive regions, endogenous RNA modification or batch effects. Targeted amplicon sequencing, matched DNA or an independent RNA-seq experiment is required for orthogonal confirmation.
-
-### Sensitivity
-
-The stringent edited-read threshold favours strong events and may miss low-frequency editing. The final candidate set therefore emphasises specificity over complete sensitivity.
+The stringent edited-read threshold favours specificity and may miss low-frequency editing.
 
 ## Reproducibility
 
-The repository separates the public-facing analysis from the full technical record:
-
-- `pipeline/` contains executable scripts and commands;
-- `dbtl/` records iterative development, failed approaches and decisions;
-- `results/` contains the frozen filtering summary;
-- `pipeline/CATALOGUE_PROVENANCE.md` records catalogue source and QC.
+- `pipeline/` contains executable code and commands.
+- `dbtl/` contains ten development cycles, failure logs and decisions.
+- `results/` contains the frozen count summary.
+- `pipeline/CATALOGUE_PROVENANCE.md` records catalogue source and quality control.
 
 ## References
 
 1. Lin, Y.-C. *et al.* Genome dynamics of the human embryonic kidney 293 lineage in response to cell biology manipulations. *Nature Communications* **5**, 4767 (2014).
 2. Dobin, A. *et al.* STAR: ultrafast universal RNA-seq aligner. *Bioinformatics* **29**, 15–21 (2013).
 3. McKenna, A. *et al.* The Genome Analysis Toolkit. *Genome Research* **20**, 1297–1303 (2010).
-4. Picardi, E. & Pesole, G. REDItools. *Bioinformatics* **29**, 1813–1814 (2013).
+4. Picardi, E. and Pesole, G. REDItools. *Bioinformatics* **29**, 1813–1814 (2013).
 5. McLaren, W. *et al.* The Ensembl Variant Effect Predictor. *Genome Biology* **17**, 122 (2016).
-6. Zhao, H. *et al.* CrossMap: a versatile tool for coordinate conversion between genome assemblies. *Bioinformatics* **30**, 1006–1007 (2014).
+6. Zhao, H. *et al.* CrossMap. *Bioinformatics* **30**, 1006–1007 (2014).
 7. Danecek, P. *et al.* Twelve years of SAMtools and BCFtools. *GigaScience* **10**, giab008 (2021).
