@@ -30,13 +30,29 @@ The retained sites are screening candidates, not a definitive off-target list. T
 
 | Resource | Purpose |
 |---|---|
-| [Wiki text](wiki/README.md) | Concise iGEM-facing project story |
-| [Engineering notebook](docs/ENGINEERING_CYCLE.md) | DBTL cycles, failed tests, decisions and commands |
+| [Dry-lab wiki text](wiki/README.md) | Finished workflow, results, contribution and limitations |
+| [DBTL record](dbtl/README.md) | Separate development history with four cycles, failed tests and decisions |
 | [Pipeline guide](pipeline/README.md) | Reproducible execution steps |
 | [Catalogue provenance](pipeline/CATALOGUE_PROVENANCE.md) | Source, liftover and QC |
 | [Outputs](pipeline/OUTPUTS.md) | Expected files and frozen result structure |
 | [Troubleshooting](pipeline/TROUBLESHOOTING.md) | Observed errors and fixes |
 | [Result summary](results/README.md) | Frozen evidence-funnel counts |
+
+## DBTL folder
+
+```text
+dbtl/
+├── README.md
+├── cycle-1-rna-evidence.md
+├── cycle-2-public-wgs.md
+├── cycle-3-catalogue-harmonization.md
+├── cycle-4-final-integration.md
+├── failure-log.md
+├── decision-log.md
+└── reproducibility-checklist.md
+```
+
+The wiki intentionally omits the iterative development narrative. The DBTL folder preserves the detailed reasoning and commands without interrupting the public-facing dry-lab story.
 
 ## Core implementation
 
