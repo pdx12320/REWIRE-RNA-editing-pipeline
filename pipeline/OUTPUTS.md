@@ -18,6 +18,7 @@ $PROJECT/
 ├── vep/
 ├── candidate_depth/          optional strict-depth route
 ├── final/
+├── lamar_training/           Model 1 to Model 2 label route
 └── logs/
 ```
 
@@ -43,6 +44,24 @@ final/CU5.17_EGFP_GC.treatment_specific.tsv.gz
 ```
 
 The strict route retains sample-level call status, independent candidate depth, REDItools2 coverage, alternate-read count, editing fraction and `genomic_catalogue_overlap`.
+
+## LAMAR training-label outputs
+
+```text
+lamar_training/
+├── base_counts/
+│   ├── CU517_GC_T1.candidate_base_counts.tsv.gz
+│   ├── CU517_GC_T2.candidate_base_counts.tsv.gz
+│   ├── CU517_GC_T3.candidate_base_counts.tsv.gz
+│   ├── CU517_GC_C1.candidate_base_counts.tsv.gz
+│   ├── CU517_GC_C2.candidate_base_counts.tsv.gz
+│   └── CU517_GC_C3.candidate_base_counts.tsv.gz
+└── CU5.17_EGFP_GC.lamar_training_labels.tsv.gz
+```
+
+Each per-sample table contains quality-filtered A/C/G/T counts, forward/reverse counts, ref/alt counts, allele depth, editing rate and exclusion diagnostics. The combined table retains all six sample measurements and adds transcript-oriented sequence windows, treated/control medians, corrected editing efficiency, replicate MAD, pooled Fisher/FDR, label class, confidence and training eligibility.
+
+Prefer the broad strand-consistent site matrix as input. The final 3,333-site screening table is already selected for treated presence and control non-calls and should not be the sole Model 2 training set.
 
 ## Legacy-table compatibility outputs
 
