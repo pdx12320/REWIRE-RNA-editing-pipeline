@@ -63,6 +63,13 @@ Each per-sample table contains quality-filtered A/C/G/T counts, forward/reverse 
 
 Prefer the broad strand-consistent site matrix as input. The final 3,333-site screening table is already selected for treated presence and control non-calls and should not be the sole Model 2 training set.
 
+## Audited background-correction outputs
+
+The production audit route writes immutable timestamped directories under
+`lamar_background_corrected/` and updates `latest` only after all validations and
+checksums pass. See [`LAMAR_BACKGROUND_CORRECTION.md`](LAMAR_BACKGROUND_CORRECTION.md)
+for the complete file manifest, recovery behavior and frozen QC counts.
+
 ## Legacy-table compatibility outputs
 
 ```text

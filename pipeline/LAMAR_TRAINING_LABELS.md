@@ -1,5 +1,9 @@
 # Model 1 to Model 2: LAMAR training-label generation
 
+For the production route with complete input manifests, T1 preprocessing audit,
+safe checkpoint recovery, direct `samtools mpileup` validation and atomic run
+publication, see [Audited Lamar background correction](LAMAR_BACKGROUND_CORRECTION.md).
+
 This module converts the RNA-editing evidence pipeline into a continuous-label dataset for Model 2. It solves the main limitation of a caller-only table: a site that is absent from a REDItools2 output is no longer assumed to have zero alternate reads.
 
 ## Recommended candidate universe
