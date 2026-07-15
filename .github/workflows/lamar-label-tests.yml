@@ -4,12 +4,16 @@ on:
   push:
     paths:
       - "pipeline/scripts/rna/build_lamar_training_table.py"
+      - "pipeline/scripts/rna/run_audited_lamar_background_correction.py"
       - "tests/test_lamar_training_label_statistics.py"
+      - "tests/test_audited_lamar_background_correction.py"
       - ".github/workflows/lamar-label-tests.yml"
   pull_request:
     paths:
       - "pipeline/scripts/rna/build_lamar_training_table.py"
+      - "pipeline/scripts/rna/run_audited_lamar_background_correction.py"
       - "tests/test_lamar_training_label_statistics.py"
+      - "tests/test_audited_lamar_background_correction.py"
       - ".github/workflows/lamar-label-tests.yml"
 
 jobs:

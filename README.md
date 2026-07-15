@@ -30,7 +30,10 @@ The retained sites are screening candidates rather than confirmed off-targets. T
 
 The LAMAR label route measures quality-filtered A/C/G/T counts at every candidate in all six BAMs, preserves replicate-level ref/alt counts, extracts transcript-oriented sequence windows and calculates background-corrected editing efficiency. The recommended training universe is the broad 9,930-site matrix rather than only the 3,333 already-filtered candidates.
 
-See [LAMAR training-label generation](pipeline/LAMAR_TRAINING_LABELS.md) for commands, label definitions, optional PUF metadata and data-splitting rules.
+See [LAMAR training-label generation](pipeline/LAMAR_TRAINING_LABELS.md) for the
+composable route and [audited background correction](pipeline/LAMAR_BACKGROUND_CORRECTION.md)
+for the production six-sample run, recovery checks, frozen QC and scalar-versus-token
+fine-tuning boundary.
 
 ## Repository map
 
@@ -59,6 +62,7 @@ See [LAMAR training-label generation](pipeline/LAMAR_TRAINING_LABELS.md) for com
 9  legacy compatibility
 10 audit and reporting
 11 LAMAR training labels
+12 audited six-sample background correction
 ```
 
 Large sequencing and intermediate files remain outside GitHub. The repository retains scripts, environment definitions, quality-control rules, frozen counts and decision records.

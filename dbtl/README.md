@@ -10,7 +10,7 @@ The frozen 3,333-site set remains a screening set because the legacy table does 
 
 ![ORCA ten-cycle DBTL roadmap](assets/figure_dbtl_roadmap.svg)
 
-## Eleven cycles
+## Twelve cycles
 
 | Cycle | Question | Test | Decision |
 |---|---|---|---|
@@ -25,6 +25,7 @@ The frozen 3,333-site set remains a screening set because the legacy table does 
 | [9](cycle-9-legacy-compatibility.md) | How can the legacy table use the new catalogue? | Compare strict-schema requirements with available files | Add a narrow exact-allele compatibility route |
 | [10](cycle-10-audit-and-reporting.md) | How should the result be reported without overclaiming? | Audit claims, counts and files | Preserve exclusions and freeze evidence-calibrated terminology |
 | [11](cycle-11-lamar-training-labels.md) | How should ORCA create Model 2 labels? | Measure A/C/G/T counts in all BAMs and build continuous sequence-linked labels | Use background-corrected efficiency and preserve all replicate counts |
+| [12](cycle-12-audited-background-correction.md) | Does the label route pass a complete six-sample production audit? | Validate inputs, labels, recovery, 120 direct recounts and checksums | Publish 9,428 eligible broad labels with explicit limitations |
 
 ## Supporting records
 
@@ -56,7 +57,7 @@ broad strand-consistent candidate universe
 
 ```text
 wiki/README.md       finished ORCA method and results
-dbtl/                eleven development cycles
+dbtl/                twelve development cycles
 pipeline/            executable implementation and LAMAR label route
 results/              frozen summary
 ```
