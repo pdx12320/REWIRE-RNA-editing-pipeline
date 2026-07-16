@@ -1,0 +1,118 @@
+{
+  "builder": "pipeline/scripts/rna/prepare_lamar_finetuning_handoff.py",
+  "guardrails": {
+    "final_3333_used_as_independent_test": false,
+    "label_total_count_fabricated": false,
+    "missing_labels_are_not_zero": true,
+    "non_center_token_labels_created": false,
+    "puf_target_seq_fabricated": false,
+    "zero_corrected_labels_retained": true
+  },
+  "input_files": {
+    "background_corrected_labels": {
+      "filename": "background_corrected_labels.tsv.gz",
+      "rows": 9930,
+      "sha256": "ea5f08897845910ddc4fbea22809f1cc2fa775157cb9705162a295191737eb1a"
+    },
+    "construct_metadata": null,
+    "lamar_ready_metadata": {
+      "filename": "lamar_ready_metadata.tsv.gz",
+      "rows": 9930,
+      "sha256": "abdb55505d96c942c59ab76885f50f822f2bf36b581163274e1146334c7a1b94"
+    }
+  },
+  "packaging_runtime": {
+    "bam_or_pileup_accessed": false,
+    "python_version": "3.9.6",
+    "scientific_counts_recomputed": false
+  },
+  "recommended_primary": "CU5.17_lamar_high_confidence.tsv.gz",
+  "row_counts": {
+    "all_eligible": 9428,
+    "excluded": 502,
+    "high_confidence": 8540,
+    "high_confidence_low_control": 7351
+  },
+  "schema_version": 1,
+  "scientific_target": "max(median(treated editing rates) - median(control editing rates), 0)",
+  "seed": 20260715,
+  "sensitivity_datasets": [
+    "CU5.17_lamar_all_eligible.tsv.gz",
+    "CU5.17_lamar_high_confidence_low_control.tsv.gz"
+  ],
+  "split_algorithm": "Union overlapping 101-nt genomic windows with exact-sequence groups, then assign connected components by deterministic multi-objective greedy balancing",
+  "split_fractions": {
+    "test": 0.1,
+    "train": 0.8,
+    "validation": 0.1
+  },
+  "split_population": "all training-eligible rows; primary analysis filters label_confidence == high",
+  "split_qc": {
+    "algorithm": "Union overlapping 101-nt genomic windows with exact-sequence groups, then assign connected components by deterministic multi-objective greedy balancing",
+    "all_eligible_counts": {
+      "test": {
+        "positive": 855,
+        "rows": 1010,
+        "zero": 155
+      },
+      "train": {
+        "positive": 6155,
+        "rows": 7409,
+        "zero": 1254
+      },
+      "validation": {
+        "positive": 854,
+        "rows": 1009,
+        "zero": 155
+      }
+    },
+    "duplicate_sequence_group_count": 9372,
+    "high_confidence_counts": {
+      "test": {
+        "positive": 846,
+        "rows": 965,
+        "zero": 119
+      },
+      "train": {
+        "positive": 5784,
+        "rows": 6614,
+        "zero": 830
+      },
+      "validation": {
+        "positive": 844,
+        "rows": 961,
+        "zero": 117
+      }
+    },
+    "leakage_checks": {
+      "allele_key_leakage_count": 0,
+      "chromosome_leakage_count": 0,
+      "duplicate_sequence_leakage_count": 0,
+      "overlap_cluster_leakage_count": 0
+    },
+    "overlap_cluster_count": 4625,
+    "schema_version": 1,
+    "seed": 20260715,
+    "strategy": "overlap_cluster",
+    "target_fractions": {
+      "test": 0.1,
+      "train": 0.8,
+      "validation": 0.1
+    },
+    "unique_sequence_count": 9372,
+    "validation_status": "pass"
+  },
+  "split_qc_file": "split_qc.json",
+  "split_strategy": "overlap_cluster",
+  "validation": {
+    "clipping_formula_checked": true,
+    "exact_one_to_one_label_metadata_join": true,
+    "leakage_checks": {
+      "allele_key_leakage_count": 0,
+      "chromosome_leakage_count": 0,
+      "duplicate_sequence_leakage_count": 0,
+      "overlap_cluster_leakage_count": 0
+    },
+    "sequence_length_101_center_index_50_center_C": true
+  }
+}

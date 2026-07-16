@@ -1,0 +1,6 @@
+name: rewire_lamar_scalar
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - scikit-learn=1.7.*

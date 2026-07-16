@@ -1,0 +1,9 @@
+# Frozen 2026-07-15 audited-run software manifest (not a Conda lock file)
+python	3.14.6 free-threading build, conda-forge, GCC 14.3.0
+pysam	0.24.0
+scipy	1.18.0
+samtools	1.23.1
+
+# Repository support is tested in CI with Python 3.11 and 3.12 for code and
+# synthetic handoff tests. End-to-end BAM evidence currently exists only for
+# the exact production versions above.

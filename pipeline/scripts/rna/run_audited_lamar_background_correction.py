@@ -1432,9 +1432,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         final_summary = dataset_results["final"][1]
         repository_audit = f"""# Repository audit
 
-## Existing project
+## Server-side analysis directory at run time
 
-- The project is not a Git working tree and contains no pre-existing automated test suite.
+- The server-side project analysis directory was not a Git working tree at the time of this frozen run. The public repository is separate and now contains automated tests.
 - Existing candidate construction code: `{project / 'helpers/filter_c_to_u_and_compare.py'}`.
 - The repository's Lamar label route documents and defaults to a 101-nt transcript-oriented window; this is the evidence for the 101-nt context used here.
 - Existing genomic-C export documentation uses coverage 20, supporting the `minimum_usable_depth=20` default.

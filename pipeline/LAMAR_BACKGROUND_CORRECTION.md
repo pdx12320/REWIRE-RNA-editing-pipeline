@@ -39,7 +39,31 @@ Final table:  final_with_293T_catalogue/CU5.17_EGFP_GC.treatment_specific.tsv.gz
 
 The broad 9,930-site matrix is the primary label universe. The post-catalogue
 3,333-site table is processed separately and must not be assumed to be a balanced
-or independent Lamar training set.
+or independent Lamar training set. It is a subset of the broad matrix and must
+not be used as an independent test set when broad-matrix sites are used for
+training.
+
+## Intended workflow versus the actual frozen run
+
+The repository's intended preprocessing route runs STAR and duplicate handling
+consistently for every sample. The completed 2026-07-15 audit used the files that
+were actually available on the server:
+
+| Samples | Frozen BAM input | Duplicate history |
+|---|---|---|
+| T1 | Coordinate-sorted Picard MarkDuplicates BAM | Duplicates marked, not removed. |
+| T2, T3, C1, C2, C3 | Original STAR coordinate-sorted BAMs | Duplicate marking had not been applied. |
+
+The pileup excluded reads carrying the duplicate flag consistently in all six
+inputs. Nevertheless, the five STAR BAMs did not contain Picard duplicate marks,
+so the preprocessing histories were not identical. This limitation is frozen in
+`bam_qc.tsv`, `repository_audit.md` and the analysis summary.
+
+`training_eligible=1` requires the frozen sequence/orientation checks and at
+least 2 of 3 sufficiently covered replicates in both treated and control groups.
+`label_confidence=high` is stricter: all 3+3 replicates must be covered and the
+treated/control MAD consistency thresholds must pass. These definitions are not
+changed by the downstream handoff builder.
 
 ## Run
 
@@ -60,6 +84,23 @@ Do not start a second process while one is active. Monitor with:
 ```bash
 tail -f "$PROJECT/lamar_background_corrected/launcher.log"
 ```
+
+## Software-version boundary
+
+The frozen production manifest records Python 3.14.6 (free-threading,
+conda-forge), pysam 0.24.0, samtools 1.23.1 and SciPy 1.18.0. Those exact values
+are preserved in `pipeline/env/lamar_labels_production_versions.txt`.
+
+Repository code and synthetic handoff tests support Python 3.11 and 3.12 in CI.
+The maintained BAM environment pins the currently evidenced pysam 0.24.x and
+samtools 1.23.x families; end-to-end production evidence is specifically at
+pysam 0.24.0 and samtools 1.23.1. Python 3.11/3.12 support is not a claim that
+those interpreters exactly reproduce the Python 3.14 production runtime.
+
+SciPy is optional in the audited statistics code. When available,
+`scipy.stats.fisher_exact` is used; otherwise the repository uses its tested
+stdlib two-sided exact-test fallback. The optional scalar baseline uses
+scikit-learn 1.7.x from `pipeline/env/lamar_scalar_baseline.yml`.
 
 ## Safe recovery from an interrupted post-pileup run
 
@@ -132,4 +173,23 @@ the experimentally correct PUF target sequence, and a documented weighting rule.
 The PUF target must not be inferred from the sample name.
 
 Avoid random row-level splits because nearby 101-nt windows can overlap. Prefer
-chromosome-, gene-, transcript- or genomic-cluster-grouped evaluation.
+the repository's overlap-cluster split, which merges position±50 genomic
+intervals and also groups identical sequences. The supported chromosome-held-out
+strategy measures a stronger genomic distribution shift.
+
+The validated derived handoff contains 9,428 all-eligible rows, including 1,564
+valid zero corrected labels; 8,540 rows are high confidence and are recommended
+for the primary analysis. The 7,351 high-confidence rows without the elevated
+control-background flag form a stricter sensitivity analysis.
+
+```bash
+python pipeline/scripts/rna/prepare_lamar_finetuning_handoff.py \
+  --labels /path/to/background_corrected_labels.tsv.gz \
+  --metadata /path/to/lamar_ready_metadata.tsv.gz \
+  --output-dir /path/to/CU5.17_lamar_finetuning_handoff \
+  --seed 20260715 \
+  --split-strategy overlap_cluster
+```
+
+This packaging step validates and partitions frozen derived tables only. It does
+not rerun BAM pileups or alter scientific counts and thresholds.
