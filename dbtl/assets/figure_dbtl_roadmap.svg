@@ -6,7 +6,7 @@
     </style>
   </defs>
   <rect width="1600" height="760" fill="#FFFFFF"/>
-  <text class="title" x="60" y="60">ORCA development roadmap: ten DBTL cycles</text>
+  <text class="title" x="60" y="60">ORCA development roadmap: twelve DBTL cycles</text>
   <text class="subtitle" x="60" y="90">Scientific design, implementation stability and evidence-calibrated reporting were iterated separately</text>
 
   <text class="phase" x="70" y="145">Scientific analysis</text>
@@ -41,6 +41,13 @@
   <path class="arrow" d="M1410 565 V610"/>
   <rect class="audit" x="1280" y="610" width="260" height="100" rx="16"/>
   <text class="number" x="1310" y="650">10</text><text class="label" x="1360" y="650">Audit and reporting</text><text class="small" x="1310" y="680">claims, counts and files</text>
+
+  <text class="phase" x="70" y="600">Model interface</text>
+  <rect class="audit" x="60" y="610" width="260" height="100" rx="16"/>
+  <text class="number" x="90" y="650">11</text><text class="label" x="140" y="650">LAMAR labels</text><text class="small" x="90" y="680">continuous six-sample targets</text>
+  <path class="arrow" d="M320 660 H365"/>
+  <rect class="audit" x="365" y="610" width="260" height="100" rx="16"/>
+  <text class="number" x="395" y="650">12</text><text class="label" x="445" y="650">Six-sample audit</text><text class="small" x="395" y="680">recounts, recovery and QC</text>
 
   <path class="arrow" d="M1235 245 C1370 260 1410 330 1410 415"/>
   <path class="arrow" d="M1235 490 H1280"/>

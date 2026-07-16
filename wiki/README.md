@@ -41,6 +41,13 @@ Paired-end reads were aligned to the GRCh38 primary assembly with STAR in two-pa
 
 All modules use the same GRCh38 FASTA and chromosome naming convention. Each sample remains separate so that editing support can be evaluated across biological replicates rather than after pooling.
 
+That paragraph describes the intended reproducible preprocessing workflow. The
+actual frozen six-sample label audit used the available Picard MarkDuplicates
+BAM for T1 and original STAR coordinate-sorted BAMs for T2/T3/C1/C2/C3.
+Duplicate-flagged reads were excluded with the same pileup filter, but the five
+STAR inputs had not been duplicate-marked, so their preprocessing histories were
+not identical.
+
 ### 2. Substitution calling
 
 REDItools2 was run independently for all six libraries.<sup>4</sup>
@@ -249,6 +256,15 @@ corrected_editing_efficiency = max(
 )
 ```
 
+For the frozen audited labels, `training_eligible` requires at least 2/3 covered
+replicates in each group; high confidence requires all 3+3 and the frozen
+replicate-consistency thresholds. Missing control evidence remains missing and
+is never relabeled as zero. Valid corrected-zero labels are retained.
+
+Use `prepare_lamar_finetuning_handoff.py` for overlap-cluster and exact-sequence
+grouped splits. The 3,333 final candidates are a subset of the broad matrix and
+cannot be an independent test set for broad-matrix training.
+
 ## Results
 
 | Evidence layer | Number of sites |
@@ -258,6 +274,15 @@ corrected_editing_efficiency = max(
 | Treatment-specific before catalogue comparison | 3,349 |
 | Exact 293T catalogue overlaps | 16 |
 | Final catalogue-filtered screening candidates | 3,333 |
+
+| Model-facing population | Number of sites | Use |
+|---|---:|---|
+| Broad called-candidate universe | 9,930 | Audited source universe; not a complete negative universe. |
+| All eligible | 9,428 | Sensitivity analysis. |
+| High confidence | 8,540 | Recommended primary scalar-regression dataset. |
+| High confidence without elevated control background | 7,351 | Stricter sensitivity analysis. |
+| Eligible corrected-zero examples | 1,564 | Valid examples that must be retained. |
+| Final selected candidates | 3,333 | Screening subset, not an independent model test set. |
 
 The 16 exact catalogue matches remain available in a separate exclusion table. The 3,333 retained sites form the final dry-lab screening set for prioritization and experimental validation of the ORCA PUF–APOBEC system. They should not be interpreted as 3,333 confirmed biological off-targets.
 
@@ -271,7 +296,7 @@ This dry-lab model provides:
 4. exact-allele genomic filtering;
 5. separate retained, excluded and summary outputs;
 6. direct six-sample base counting and continuous labels for LAMAR;
-7. eleven documented DBTL cycles covering analysis, implementation and evidence boundaries.
+7. twelve documented DBTL cycles covering analysis, implementation and evidence boundaries.
 
 ## Limitations
 
@@ -283,10 +308,15 @@ RNA-seq mismatches may also arise from alignment ambiguity, sequencing artefacts
 
 The stringent edited-read threshold favours specificity and may miss low-frequency editing.
 
+The broad 9,930-site matrix is derived from called candidate sites rather than a
+complete transcriptome-wide negative universe. Sequence-matched, sufficiently
+covered uncalled cytidines remain a future improvement. Computational QC and
+leakage-safe splitting do not constitute experimental or biological validation.
+
 ## Reproducibility
 
 - `pipeline/` contains executable code, environment files and commands.
-- `dbtl/` contains eleven development cycles, failure logs and decisions.
+- `dbtl/` contains twelve development cycles, failure logs and decisions.
 - `results/` contains the frozen count summary.
 - `pipeline/CATALOGUE_PROVENANCE.md` records catalogue source and quality control.
 - `pipeline/LAMAR_TRAINING_LABELS.md` documents the Model 1 to Model 2 handoff.

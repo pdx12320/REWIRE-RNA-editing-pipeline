@@ -153,3 +153,28 @@ results/final_summary.tsv
 ```
 
 Large raw and intermediate files may remain outside GitHub, but their paths, checksums and generation commands should be recorded.
+
+## 12. Frozen six-BAM audit checks
+
+- [ ] Record that T1 used the available Picard MarkDuplicates BAM.
+- [ ] Record that T2/T3/C1/C2/C3 used original STAR coordinate-sorted BAMs.
+- [ ] Apply the duplicate-flag exclusion consistently to all pileups.
+- [ ] Do not describe those preprocessing histories as identical.
+- [ ] Keep `training_eligible` at the frozen minimum of 2/3 covered replicates
+  per group; do not silently tighten or loosen it downstream.
+- [ ] Define high confidence separately as all 3+3 covered replicates plus the
+  frozen treated/control replicate-consistency thresholds.
+- [ ] Describe 120/120 direct recount agreement as computational QC, not
+  experimental or biological validation.
+
+## 13. Model handoff checks
+
+- [ ] Join label and sequence tables one-to-one by `chrom,position,ref,alt`.
+- [ ] Confirm 101 nt, zero-based center index 50 and transcript-oriented C>T.
+- [ ] Confirm `corrected=max(treated_median-control_median,0)` without filling
+  missing group measurements.
+- [ ] Retain corrected-zero labels.
+- [ ] Assign complete overlap clusters and duplicate-sequence groups to one split.
+- [ ] Do not use the final 3,333 subset as an independent test set.
+- [ ] Do not fabricate PUF targets, total-count vectors or non-center labels.
+- [ ] Verify `split_qc.json` and `checksums.sha256` before model training.
