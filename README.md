@@ -30,7 +30,7 @@ RNA-seq alignment and preprocessing
 
 | Evidence layer | Sites |
 |---|---:|
-| Strand-consistent site matrix | 9,930 |
+| Final multi-experiment LAMAR training sites | 6,428 |
 | Called in all three treated replicates | 4,778 |
 | Treatment-specific before catalogue comparison | 3,349 |
 | Exact 293T catalogue overlaps | 16 |
@@ -40,7 +40,7 @@ The retained sites are screening candidates rather than confirmed off-targets. T
 
 ## Model 1 to Model 2 interface
 
-The LAMAR label route measures quality-filtered A/C/G/T counts at every candidate in all six BAMs, preserves replicate-level ref/alt counts, extracts transcript-oriented sequence windows and calculates background-corrected editing efficiency. The recommended training universe is the broad 9,930-site matrix rather than only the 3,333 already-filtered candidates.
+The completed multi-experiment LAMAR handoff contains **6,428 unique site-level records**: 5,078 train, 678 validation and 672 test. CU5.13, CU5.15 and CU5.17 remain separate experiment groups; shared genomic sites are represented once, and overlapping or identical sequence windows do not cross splits.
 
 The frozen audited run did **not** use identical preprocessing histories. T1 used
 the available coordinate-sorted Picard MarkDuplicates BAM; T2, T3, C1, C2 and C3
@@ -111,17 +111,13 @@ index 51.
 
 | Dataset or population | Rows | Recommended use |
 |---|---:|---|
-| Broad called-candidate universe | 9,930 | Audited source universe; not a complete transcriptome-wide negative universe. |
-| All training-eligible | 9,428 | Sensitivity analysis; eligibility allows at least 2/3 sufficiently covered replicates per group. |
-| High confidence | 8,540 | **Recommended primary fine-tuning dataset**; requires all 3+3 covered replicates and frozen replicate-consistency thresholds. |
-| High confidence, low control background | 7,351 | Stricter sensitivity analysis. |
-| Zero corrected labels among eligible rows | 1,564 | Keep as valid background-corrected examples; do not delete or relabel. |
-| Final selected candidates | 3,333 | Screening/prioritization subset of the broad matrix; never use as an independent test set against broad-matrix training. |
+| Final multi-experiment site-level dataset | 6,428 | **Actual LAMAR handoff used for the one-seed Frozen/LoRA comparison**: train 5,078, validation 678 and test 672. |
 
-The broad 9,930-site universe is derived from called candidate sites. A future
-negative-set improvement is to add sequence-matched, sufficiently covered,
-uncalled transcript-oriented cytidines. The current handoff does not invent
-those sites, `puf_target_seq`, `label_total_count`, or non-center token labels.
+Each genomic site contributes one main record. The target is a scalar consensus
+editing efficiency, not a token-level label, and repeated evidence across
+experiments does not increase the independent sample count. CU5.13 and CU5.15
+retain borrowed-control and batch-matching limitations; the handoff does not
+invent `puf_target_seq`, `label_total_count`, or non-center token labels.
 
 ## Repository map
 
