@@ -38,7 +38,8 @@ build_args=(
   --reference "$REFERENCE"
   --output "$OUTPUT"
   --window-size 101
-  --min-allele-depth 20
+  --min-allele-depth 51
+  --positive-threshold 0.10
 )
 if [[ -n "$SITE_METADATA" ]]; then
   SITE_METADATA="$(readlink -m "$SITE_METADATA")"

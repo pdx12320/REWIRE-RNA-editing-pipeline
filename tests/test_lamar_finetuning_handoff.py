@@ -75,6 +75,8 @@ def synthetic_rows(count=18):
         }
         meta = {
             **key,
+            "gene_id": "GENE{:03d}".format(index // 2),
+            "gene_name": "GENE{:03d}".format(index // 2),
             "sequence_context": sequence,
             "sequence_length": "101",
             "center_index": "50",
@@ -178,6 +180,23 @@ class LamarFinetuningHandoffTests(unittest.TestCase):
             row["allele_key"]: row["split"] for row in handoff.assign_splits(rows, seed=20260715)
         }
         self.assertEqual(first, second)
+
+    def test_gene_disjoint_splitting(self):
+        rows = handoff.assign_splits(
+            joined_eligible_rows(), strategy="gene_disjoint", seed=20260822
+        )
+        splits_by_gene = {}
+        for row in rows:
+            splits_by_gene.setdefault(row["gene_group_id"], set()).add(row["split"])
+        self.assertTrue(all(len(splits) == 1 for splits in splits_by_gene.values()))
+        qc = handoff.validate_split_assignments(rows, strategy="gene_disjoint")
+        self.assertEqual(qc["gene_leakage_count"], 0)
+
+    def test_gene_disjoint_rejects_ambiguous_gene(self):
+        rows = joined_eligible_rows()
+        rows[0]["gene_id"] = "GENE1|GENE2"
+        with self.assertRaisesRegex(ValueError, "unambiguous gene_id"):
+            handoff.assign_splits(rows, strategy="gene_disjoint", seed=20260822)
 
     def test_no_allele_key_leakage(self):
         rows = handoff.assign_splits(joined_eligible_rows(), seed=20260715)
