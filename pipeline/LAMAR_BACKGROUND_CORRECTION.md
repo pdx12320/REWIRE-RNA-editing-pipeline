@@ -10,10 +10,10 @@ count, label, sequence and direct-recount checks pass.
 - verifies or creates the FASTA `.fai` and records all chromosome lengths;
 - audits candidate schemas, GRCh38 1-based coordinates, reference alleles,
   chromosome naming, duplicate alleles and strand-specific C>T/G>A rules;
-- searches recursively for the original STAR T1 BAM and records the actual T1
-  choice instead of claiming identical preprocessing;
+- requires the analysis-ready `splitncigarreads` BAM for every sample and audits
+  STAR, MarkDuplicates and SplitNCigarReads provenance;
 - independently counts A/C/G/T in T1, T2, T3, C1, C2 and C3 with MAPQ 30,
-  base quality 20 and consistent flag filters;
+  base quality 20, `NH=1` and consistent flag filters;
 - distinguishes adequate zero-alt coverage, low coverage, missing data and
   technical failure;
 - requires sufficient treated and control coverage before assigning a corrected
@@ -43,7 +43,7 @@ or independent Lamar training set. It is a subset of the broad matrix and must
 not be used as an independent test set when broad-matrix sites are used for
 training.
 
-## Intended workflow versus the actual frozen run
+## Archived frozen run versus the current input boundary
 
 The repository's intended preprocessing route runs STAR and duplicate handling
 consistently for every sample. The completed 2026-07-15 audit used the files that
@@ -58,6 +58,13 @@ The pileup excluded reads carrying the duplicate flag consistently in all six
 inputs. Nevertheless, the five STAR BAMs did not contain Picard duplicate marks,
 so the preprocessing histories were not identical. This limitation is frozen in
 `bam_qc.tsv`, `repository_audit.md` and the analysis summary.
+
+The current script no longer selects those mixed inputs. It requires all six
+files at `bam/splitncigarreads/<sample>.splitncigarreads.bam`, checks their
+preprocessing `@PG` records and sampled `NH` tags, and counts only `NH=1` reads.
+Run `rebuild_strict_cu517_dataset.sh` to recreate the six BAMs and the full-C
+training universe. The archived 2026-07-15 counts below remain historical
+provenance and are not relabeled as results of the corrected route.
 
 `training_eligible=1` requires the frozen sequence/orientation checks and at
 least 2 of 3 sufficiently covered replicates in both treated and control groups.
@@ -113,7 +120,8 @@ bash pipeline/scripts/rna/run_audited_lamar_background_correction.sh \
   --reuse-pileup /path/to/incomplete_run/six_sample_pileup_counts.tsv.gz
 ```
 
-The recovery loader aborts on missing columns, unexpected samples or alleles,
+The recovery loader also requires `filters_used` to record `NH=1` and aborts on
+legacy caches, missing columns, unexpected samples or alleles,
 duplicate sample/allele rows, incorrect row count, or depth/base-count mismatch.
 The reused table is recorded in `input_manifest.tsv`.
 
@@ -173,9 +181,10 @@ the experimentally correct PUF target sequence, and a documented weighting rule.
 The PUF target must not be inferred from the sample name.
 
 Avoid random row-level splits because nearby 101-nt windows can overlap. Prefer
-the repository's overlap-cluster split, which merges position±50 genomic
-intervals and also groups identical sequences. The supported chromosome-held-out
-strategy measures a stronger genomic distribution shift.
+the repository's `gene_disjoint` split for annotated strict data; it keeps a
+gene in one partition and also merges position±50 genomic intervals and exact
+duplicate sequences. The supported chromosome-held-out strategy measures a
+stronger genomic distribution shift.
 
 The validated derived handoff contains 9,428 all-eligible rows, including 1,564
 valid zero corrected labels; 8,540 rows are high confidence and are recommended

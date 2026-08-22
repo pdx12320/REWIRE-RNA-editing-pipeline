@@ -6,12 +6,38 @@ This document gives the executable workflow. The reasoning, failed tests and DBT
 
 ```text
 six RNA-seq libraries
-→ STAR and GATK preprocessing
+→ GRCh38 + sequence-verified EGFP-GC reporter reference
+→ uniform STAR and GATK preprocessing for all six libraries
 → REDItools2 substitution calls
 → VEP transcript orientation
 → treated/control comparison
 → exact-allele filtering against the GRCh38 293T catalogue
 ```
+
+## Strict CU5.17 model-training rebuild
+
+For the corrected training dataset, run the end-to-end strict workflow:
+
+```bash
+bash pipeline/scripts/rna/rebuild_strict_cu517_dataset.sh \
+  "$PROJECT" "$GRCH38_FASTA" "$GENCODE_GTF" \
+  "$SEQUENCE_VERIFIED_EGFP_GC_REPORTER_FASTA" \
+  pipeline/config/samples.tsv 32
+```
+
+This workflow verifies EGFP positions 458–459 as `GC`, builds an augmented STAR
+reference, recreates all six BAMs through one preprocessing route, requires
+`NH=1`, audits sequence mappability, enumerates every covered exonic cytidine
+with a contiguous exon-contained 101-nt window,
+keeps depth `>50` in every replicate, constructs zero-alt strict negatives and
+positive sites, then writes a 1:200 gene-disjoint handoff. See
+[`LAMAR_TRAINING_LABELS.md`](LAMAR_TRAINING_LABELS.md) for definitions and output
+files.
+
+The exact reporter FASTA must come from the sequenced plasmid/construct or the
+authors. The paper and its one-file public analysis repository do not provide a
+complete reporter sequence, so this repository does not substitute a guessed
+pEGFP-C1 sequence.
 
 ## Repository structure
 
@@ -51,6 +77,7 @@ pipeline/
 - SRA Toolkit
 - STAR
 - samtools and htslib
+- BWA 0.7.17 or newer (101-nt mappability audit)
 - GATK 4 with Java 17
 - REDItools2
 - Open MPI

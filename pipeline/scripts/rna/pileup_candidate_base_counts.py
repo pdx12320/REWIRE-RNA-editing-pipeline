@@ -82,8 +82,6 @@ def resolve_bam_path(bam_dir: Path, sample: str, srr: str) -> Path:
     candidates = [
         bam_dir / f"{sample}.splitncigarreads.bam",
         bam_dir / f"{srr}.splitncigarreads.bam" if srr else Path("/__missing__"),
-        bam_dir / f"{sample}.bam",
-        bam_dir / f"{srr}.bam" if srr else Path("/__missing__"),
     ]
     for path in candidates:
         if path.is_file():
@@ -104,7 +102,15 @@ def reference_name_map(references: Sequence[str]) -> Dict[str, str]:
     return mapping
 
 
-def count_site(alignment, bam_chrom: str, position: int, min_mapq: int, min_baseq: int, max_depth: int) -> dict:
+def count_site(
+    alignment,
+    bam_chrom: str,
+    position: int,
+    min_mapq: int,
+    min_baseq: int,
+    max_depth: int,
+    require_nh_unique: bool = True,
+) -> dict:
     counts = {base: 0 for base in BASES}
     forward = {base: 0 for base in BASES}
     reverse = {base: 0 for base in BASES}
@@ -117,6 +123,8 @@ def count_site(alignment, bam_chrom: str, position: int, min_mapq: int, min_base
         "qcfail": 0,
         "deletion_or_refskip": 0,
         "non_acgt": 0,
+        "missing_nh": 0,
+        "nh_multimapper": 0,
     }
 
     for column in alignment.pileup(
@@ -150,6 +158,13 @@ def count_site(alignment, bam_chrom: str, position: int, min_mapq: int, min_base
             if read.mapping_quality < min_mapq:
                 excluded["low_mapq"] += 1
                 continue
+            if require_nh_unique:
+                if not read.has_tag("NH"):
+                    excluded["missing_nh"] += 1
+                    continue
+                if int(read.get_tag("NH")) != 1:
+                    excluded["nh_multimapper"] += 1
+                    continue
             if pileup_read.is_del or pileup_read.is_refskip or pileup_read.query_position is None:
                 excluded["deletion_or_refskip"] += 1
                 continue
@@ -203,6 +218,8 @@ def output_fields() -> List[str]:
         "excluded_qcfail",
         "excluded_deletion_or_refskip",
         "excluded_non_acgt",
+        "excluded_missing_nh",
+        "excluded_nh_multimapper",
     ]
     return fields
 
@@ -222,6 +239,11 @@ def main() -> None:
     parser.add_argument("--min-mapq", type=int, default=30)
     parser.add_argument("--min-baseq", type=int, default=20)
     parser.add_argument("--max-depth", type=int, default=1_000_000)
+    parser.add_argument(
+        "--allow-missing-nh",
+        action="store_true",
+        help="Legacy opt-out. Strict mode requires an NH tag equal to 1 for every counted read.",
+    )
     args = parser.parse_args()
 
     if args.min_mapq < 0 or args.min_baseq < 0 or args.max_depth < 1:
@@ -258,7 +280,15 @@ def main() -> None:
                 bam_chrom = chrom_map.get(norm_chrom(site.chrom))
                 if bam_chrom is None:
                     raise SystemExit(f"ERROR: candidate contig {site.chrom!r} is absent from BAM {bam_path}")
-                measured = count_site(alignment, bam_chrom, site.position, args.min_mapq, args.min_baseq, args.max_depth)
+                measured = count_site(
+                    alignment,
+                    bam_chrom,
+                    site.position,
+                    args.min_mapq,
+                    args.min_baseq,
+                    args.max_depth,
+                    require_nh_unique=not args.allow_missing_nh,
+                )
                 ref_count = measured.get(f"{site.ref}_count", 0)
                 alt_count = measured.get(f"{site.alt}_count", 0)
                 allele_depth = ref_count + alt_count

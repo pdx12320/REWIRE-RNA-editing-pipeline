@@ -348,6 +348,21 @@ def build_duplicate_sequence_groups(rows):
     return {allele_key(row): id_by_sequence[str(row["sequence"]).upper()] for row in rows}
 
 
+def build_gene_groups(rows):
+    """Return allele-key -> unambiguous gene ID for gene-disjoint splitting."""
+    groups = {}
+    for row in rows:
+        gene_id = str(row.get("gene_id", "")).strip()
+        if gene_id in MISSING or "|" in gene_id:
+            raise ValueError(
+                "gene_disjoint splitting requires one unambiguous gene_id per row: {}".format(
+                    allele_key_string(row)
+                )
+            )
+        groups[allele_key(row)] = gene_id
+    return groups
+
+
 class UnionFind:
     def __init__(self, size):
         self.parent = list(range(size))
@@ -465,24 +480,35 @@ def balanced_component_assignment(components, rows, seed):
 
 
 def assign_splits(rows, strategy="overlap_cluster", seed=DEFAULT_SEED):
-    if strategy not in {"overlap_cluster", "chromosome"}:
+    if strategy not in {"overlap_cluster", "chromosome", "gene_disjoint"}:
         raise ValueError("Unknown split strategy: {}".format(strategy))
     rows = sorted(rows, key=lambda row: allele_key(row))
     if len(index_unique(rows, "eligible split rows")) != len(rows):
         raise AssertionError("Duplicate split keys")
     overlap_by_key = build_overlap_clusters(rows)
     sequence_group_by_key = build_duplicate_sequence_groups(rows)
+    gene_group_by_key = build_gene_groups(rows) if strategy == "gene_disjoint" else {}
     union_find = UnionFind(len(rows))
 
     primary_groups = defaultdict(list)
     sequence_groups = defaultdict(list)
     for index, row in enumerate(rows):
         key = allele_key(row)
-        primary_id = overlap_by_key[key] if strategy == "overlap_cluster" else str(row["chrom"])
+        if strategy == "overlap_cluster":
+            primary_id = overlap_by_key[key]
+        elif strategy == "chromosome":
+            primary_id = str(row["chrom"])
+        else:
+            primary_id = gene_group_by_key[key]
         primary_groups[primary_id].append(index)
         sequence_groups[sequence_group_by_key[key]].append(index)
     union_groups(union_find, primary_groups)
     union_groups(union_find, sequence_groups)
+    if strategy == "gene_disjoint":
+        overlap_groups = defaultdict(list)
+        for index, row in enumerate(rows):
+            overlap_groups[overlap_by_key[allele_key(row)]].append(index)
+        union_groups(union_find, overlap_groups)
 
     components_by_root = defaultdict(list)
     for index in range(len(rows)):
@@ -509,6 +535,7 @@ def assign_splits(rows, strategy="overlap_cluster", seed=DEFAULT_SEED):
                     "split": split,
                     "overlap_cluster_id": overlap_by_key[key],
                     "duplicate_sequence_group_id": sequence_group_by_key[key],
+                    "gene_group_id": gene_group_by_key.get(key, str(row.get("gene_id", "NA"))),
                     "label_confidence": row["label_confidence"],
                     "label_class": label_class(row),
                     "training_eligible": row["training_eligible"],
@@ -539,11 +566,14 @@ def validate_split_assignments(rows, strategy="overlap_cluster"):
     train = [row for row in rows if row["split"] == "train"]
     train_classes = {row["label_class"] for row in train}
     chromosome_leakage = 0
+    gene_leakage = 0
     if strategy == "chromosome":
         splits_by_chrom = defaultdict(set)
         for row in rows:
             splits_by_chrom[str(row["chrom"])].add(str(row["split"]))
         chromosome_leakage = sum(len(splits) > 1 for splits in splits_by_chrom.values())
+    if strategy == "gene_disjoint":
+        gene_leakage = split_leakage_count(rows, "gene_group_id")
     errors = []
     if duplicate_key_count:
         errors.append("allele key appears more than once")
@@ -553,6 +583,8 @@ def validate_split_assignments(rows, strategy="overlap_cluster"):
         errors.append("identical sequence crosses splits")
     if chromosome_leakage:
         errors.append("chromosome crosses splits")
+    if gene_leakage:
+        errors.append("gene crosses splits")
     if missing_splits:
         errors.append("empty split(s): {}".format(",".join(sorted(missing_splits))))
     if "zero" not in train_classes or "positive" not in train_classes:
@@ -564,6 +596,7 @@ def validate_split_assignments(rows, strategy="overlap_cluster"):
         "overlap_cluster_leakage_count": overlap_leakage,
         "duplicate_sequence_leakage_count": sequence_leakage,
         "chromosome_leakage_count": chromosome_leakage,
+        "gene_leakage_count": gene_leakage,
     }
 
 
@@ -599,12 +632,17 @@ def make_split_qc(split_rows, strategy, seed):
             "Union overlapping 101-nt genomic windows with exact-sequence groups, then assign connected components "
             "by deterministic multi-objective greedy balancing"
             if strategy == "overlap_cluster"
-            else "Union chromosomes with exact-sequence groups, then assign connected components by deterministic multi-objective greedy balancing"
+            else (
+                "Union genes, overlapping 101-nt windows and exact-sequence groups, then assign connected components by deterministic multi-objective greedy balancing"
+                if strategy == "gene_disjoint"
+                else "Union chromosomes with exact-sequence groups, then assign connected components by deterministic multi-objective greedy balancing"
+            )
         ),
         "all_eligible_counts": counts,
         "high_confidence_counts": high_counts,
         "overlap_cluster_count": len({row["overlap_cluster_id"] for row in split_rows}),
         "duplicate_sequence_group_count": len({row["duplicate_sequence_group_id"] for row in split_rows}),
+        "gene_group_count": len({row["gene_group_id"] for row in split_rows}),
         "unique_sequence_count": len({row["sequence"] for row in split_rows}),
         "leakage_checks": leakage,
         "validation_status": "pass",
@@ -703,6 +741,7 @@ FIELD_DESCRIPTIONS = {
     "split": "Leakage-resistant train, validation, or test assignment.",
     "overlap_cluster_id": "Merged same-chromosome cluster of overlapping position±50 intervals.",
     "duplicate_sequence_group_id": "Group identifier shared by exactly identical 101-nt sequences.",
+    "gene_group_id": "Unambiguous gene identifier used for gene-disjoint assignment when requested.",
     "label_class": "zero if corrected target is 0; positive otherwise.",
     "training_eligible": "Frozen audit flag; requires at least 2/3 sufficiently covered replicates in each group plus audit QC.",
     "label_confidence": "Frozen audit confidence; high requires 3+3 covered replicates and replicate-consistency thresholds.",
@@ -781,6 +820,10 @@ also links identical sequences across coordinates before component-level split
 assignment. `chromosome` instead holds out whole chromosomes (while still
 linking identical sequences) and therefore measures a stronger genomic
 distribution shift.
+
+`gene_disjoint` keeps every gene in exactly one split and also links overlapping
+windows and identical sequences. Rows with missing or ambiguous `gene_id` stop
+the build instead of being assigned by coordinate.
 
 ## Scalar export
 
@@ -985,7 +1028,7 @@ def parse_args(argv=None):
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument(
-        "--split-strategy", choices=("overlap_cluster", "chromosome"), default="overlap_cluster"
+        "--split-strategy", choices=("overlap_cluster", "chromosome", "gene_disjoint"), default="overlap_cluster"
     )
     parser.add_argument(
         "--public-copy-dir",
