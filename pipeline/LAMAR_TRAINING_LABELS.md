@@ -1,53 +1,6 @@
 # Model 1 to Model 2: LAMAR training-label generation
 
-## Current strict production route
-
-Use `rebuild_strict_cu517_dataset.sh` for a new training build. It applies the
-four required corrections together:
-
-1. validate a real EGFP-GC reporter FASTA (`G458-C459`) and append it to GRCh38;
-2. re-align and reprocess all six libraries through the same
-   STAR → MarkDuplicates → SplitNCigarReads route, then audit every BAM;
-3. count only `NH=1` reads, audit 101-nt reference mappability, and scan every
-   GTF-annotated exonic cytidine rather than only caller-emitted sites;
-4. retain coverage strictly greater than 50 in all six samples, rebuild
-   positives and zero-alt strict negatives, select negatives at up to 1:200,
-   and produce a gene-disjoint 80/10/10 handoff.
-
-```bash
-bash pipeline/scripts/rna/rebuild_strict_cu517_dataset.sh \
-  "$PROJECT" \
-  /path/to/GRCh38.fa \
-  /path/to/gencode.annotation.gtf \
-  /path/to/sequence_verified_EGFP_GC_reporter.fa \
-  pipeline/config/samples.tsv \
-  32
-```
-
-The reporter sequence is intentionally not fabricated in this repository. The
-paper states that the EGFP CDS came from pEGFP-C1 and that nucleotide 458 was
-changed from U/T to G, but it does not publish the complete reporter FASTA in
-the article repository. Export the sequence from the actual plasmid/GenBank
-record or obtain it from the authors, then confirm it by plasmid Sanger/NGS or
-RNA-seq read concordance. The build aborts unless bases 458–459 are `GC`.
-
-Main strict outputs are written below `$PROJECT/strict_lamar/`:
-
-```text
-full_coverage_cytidines.tsv.gz
-mappability_audit.tsv.gz
-dataset_1to200/strict_selection_audit.json
-dataset_1to200/gene_disjoint_handoff/CU5.17_lamar_splits.tsv.gz
-dataset_1to200/gene_disjoint_handoff/split_qc.json
-```
-
-`mappability_pass` requires one exact full-length reference match and no second
-full-length match within two mismatches. `split_qc.json` must report zero gene,
-overlap-window and duplicate-sequence leakage. A site is model-eligible only if
-its complete 101-nt genomic window lies inside an annotated exon; this keeps the
-stored window identical to an mRNA segment and makes the BWA mappability test
-well-defined. Junction-crossing sites are excluded from this conservative
-101-nt universe rather than being assigned a genomic sequence with an intron.
+> **Status:** This document describes the earlier continuous-label route. The adopted binary computational-positive and strict computational-negative mechanism is documented in [LAMAR binary label design](LAMAR_BINARY_LABEL_DESIGN.md).
 
 For the production route with complete input manifests, T1 preprocessing audit,
 safe checkpoint recovery, direct `samtools mpileup` validation and atomic run

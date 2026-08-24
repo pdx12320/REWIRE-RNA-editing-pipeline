@@ -1,6 +1,6 @@
-# ORCA frozen result summary
+# Legacy ORCA called-site screening summary
 
-The current CU5.17 EGFP-GC analysis produced:
+This directory preserves the frozen output of the earlier called-site screening analysis:
 
 | Evidence layer | Sites |
 |---|---:|
@@ -14,10 +14,9 @@ The catalogue comparison used exact `CHROM:POS:REF:ALT` matching against `293T_C
 
 The frozen legacy table does not contain independent candidate-site depth and base counts for control non-calls. The 3,333 retained records are therefore an ORCA screening set for experimental prioritization, not a fully depth-qualified off-target set.
 
-Raw pileups and the full audit bundle are not committed. Frozen screening counts
-are documented here, audited label QC is stored in
-`lamar_background_corrected_qc_summary.tsv`, and compact derived model-facing
-tables are published under `data/processed/`.
+These counts are retained for historical audit. They are not the current LAMAR binary positive and negative populations, which are documented in [`LAMAR_BINARY_LABEL_DESIGN.md`](../pipeline/LAMAR_BINARY_LABEL_DESIGN.md).
+
+Large per-site tables are not committed. The compact counts are stored in [`final_summary.tsv`](final_summary.tsv), and the pipeline scripts regenerate the full outputs.
 
 The completed six-sample background-correction audit is summarized in
 [`lamar_background_corrected_qc_summary.tsv`](lamar_background_corrected_qc_summary.tsv).

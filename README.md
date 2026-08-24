@@ -1,57 +1,43 @@
-# REWIRE RNA-editing pipeline
+# REWIRE RNA-editing evidence pipeline
 
-[![LAMAR label tests](https://github.com/pdx12320/REWIRE-RNA-editing-pipeline/actions/workflows/lamar-label-tests.yml/badge.svg)](https://github.com/pdx12320/REWIRE-RNA-editing-pipeline/actions/workflows/lamar-label-tests.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.11–3.12](https://img.shields.io/badge/Python-3.11%20%7C%203.12-blue.svg)](pipeline/env/lamar_labels.yml)
+ORCA is a programmable PUF–APOBEC RNA-editing system. This repository documents how six RNA-seq libraries were converted into auditable sequence-level labels for LAMAR candidate prioritization.
 
-ORCA is the programmable PUF–APOBEC RNA-editing system evaluated by this repository. The dry-lab pipeline screens transcriptome-wide C-to-U candidates from three treated and three control RNA-seq libraries. The repository also contains the Model 1 interface that converts this evidence into continuous labels for downstream LAMAR training.
+The current binary dataset does not define negatives as sites omitted by an editing caller. It directly measures expressed transcript cytosines and requires complete six-sample evidence before assigning a strict computational-negative label.
 
-The repository has three connected but distinct layers:
+![Current computational-positive and strict computational-negative label design](wiki/assets/figure1_current_binary_label_design.svg)
 
-| Layer | Purpose |
-|---|---|
-| Transcriptome-wide screening | Align RNA-seq, call substitutions, interpret transcript strand and compare exact alleles with a harmonized 293T catalogue. |
-| Background-corrected labels | Recount every candidate in six BAMs and compute audited replicate-median treated-minus-control targets. |
-| LAMAR fine-tuning handoff | Validate the frozen tables, build leakage-resistant splits and export center-C scalar-regression records. |
+## Current model-facing dataset
 
-```text
-RNA-seq alignment and preprocessing
-→ REDItools2 substitution calling
-→ transcript-strand interpretation
-→ treated/control comparison
-→ exact-allele filtering against a GRCh38-harmonized 293T catalogue
-→ six-sample candidate base counting
-→ background-corrected LAMAR training labels
-```
+| Label population | Sites | Interpretation |
+|---|---:|---|
+| Computational positives | **1,513** | Corrected editing efficiency greater than 0.10 after coverage, control-background, sequence, complexity, and WGS checks |
+| High-confidence positive audit subset | **1,457** | Main positives with complete six-sample coverage and stronger replicate-consistency criteria |
+| Strict computational negatives | **2,821,734** | Expressed exon C sites with depth at least 20 and zero target-ALT reads in all six samples |
 
-![Transcriptome-wide RNA-editing screening workflow](wiki/assets/figure1_screening_workflow.svg)
+Every model sequence is transcript-oriented, contains 101 nucleotides, and has C at zero-based index 50. Coverage and annotation were used to construct and audit labels, not as default model inputs.
 
-## Final result
+## Evidence design
 
-| Evidence layer | Sites |
-|---|---:|
-| Strand-consistent site matrix | 9,930 |
-| Called in all three treated replicates | 4,778 |
-| Treatment-specific before catalogue comparison | 3,349 |
-| Exact 293T catalogue overlaps | 16 |
-| Final catalogue-filtered screening candidates | 3,333 |
+- The same pileup implementation was used for positive and negative recounting.
+- Computational positives required coverage in at least two treated and two control replicates, corrected efficiency above 0.10, and control median at most 0.02.
+- Strict computational negatives required usable depth of at least 20 and target-ALT count equal to zero in every treated and control replicate.
+- Both classes excluded central WGS variants, invalid sequence orientation, incomplete windows, ambiguous centers, and low-complexity contexts.
+- All original broad candidates and all positive definitions were excluded from the strict negative universe.
+- Gene, genomic-center, overlapping-window, and exact-sequence relations were grouped before splitting.
 
-The retained sites are screening candidates rather than confirmed off-targets. The frozen legacy table does not contain independent depth and base counts for control non-calls, and the 293T catalogue is external to the exact experimental batch.
+The detailed frozen specification is available in [LAMAR binary label design](pipeline/LAMAR_BINARY_LABEL_DESIGN.md).
 
-## Model 1 to Model 2 interface
+## Legacy screening analysis
 
-The LAMAR label route measures quality-filtered A/C/G/T counts at every candidate in all six BAMs, preserves replicate-level ref/alt counts, extracts transcript-oriented sequence windows and calculates background-corrected editing efficiency. The recommended training universe is the broad 9,930-site matrix rather than only the 3,333 already-filtered candidates.
+The earlier called-site screening funnel is no longer presented as the model-facing dataset. It did not construct a transcriptome-wide, fully depth-qualified negative class.
 
-The frozen audited run did **not** use identical preprocessing histories. T1 used
-the available coordinate-sorted Picard MarkDuplicates BAM; T2, T3, C1, C2 and C3
-used original STAR coordinate-sorted BAMs. Duplicate-flagged reads were excluded
-with the same pileup flag filter in all samples, but the five STAR BAMs had never
-been duplicate-marked. This exception remains part of the QC record.
+The legacy screening counts remain in [results](results/README.md) and the [DBTL record](dbtl/README.md) for historical audit and reproducibility. They must not be interpreted as the current positive-to-negative label pipeline.
 
-See [LAMAR training-label generation](pipeline/LAMAR_TRAINING_LABELS.md) for the
-composable route and [audited background correction](pipeline/LAMAR_BACKGROUND_CORRECTION.md)
-for the production six-sample run, recovery checks, frozen QC and scalar-versus-token
-fine-tuning boundary.
+## Model interface
+
+The current binary route measures quality-filtered A, C, G, and T counts in all six MarkDuplicates BAMs. It preserves replicate-level depth and target-ALT evidence, then extracts a 101-nucleotide transcript-oriented sequence.
+
+See [LAMAR training-label generation](pipeline/LAMAR_TRAINING_LABELS.md) for the legacy continuous-label route and [audited background correction](pipeline/LAMAR_BACKGROUND_CORRECTION.md) for its frozen QC record.
 
 ## Model teammate quick start
 
@@ -130,12 +116,12 @@ those sites, `puf_target_seq`, `label_total_count`, or non-center token labels.
 | [Dry-lab wiki](wiki/README.md) | Finished workflow, results, contribution and limitations |
 | [DBTL record](dbtl/README.md) | Development cycles plus failure and decision logs |
 | [Pipeline guide](pipeline/README.md) | Reproducible commands |
-| [LAMAR label guide](pipeline/LAMAR_TRAINING_LABELS.md) | Six-sample base counting and Model 2 training-table construction |
+| [LAMAR binary label design](pipeline/LAMAR_BINARY_LABEL_DESIGN.md) | Current computational-positive and strict computational-negative specification |
+| [Legacy LAMAR label guide](pipeline/LAMAR_TRAINING_LABELS.md) | Earlier continuous-label construction route |
 | [Catalogue provenance](pipeline/CATALOGUE_PROVENANCE.md) | Source, liftover and quality control |
 | [Outputs](pipeline/OUTPUTS.md) | Expected files |
 | [Troubleshooting](pipeline/TROUBLESHOOTING.md) | Observed errors and fixes |
-| [Result summary](results/README.md) | Frozen counts |
-| [Compact model data](data/README.md) | Public derived tables, manifests and checksums |
+| [Legacy result summary](results/README.md) | Frozen historical screening counts |
 
 ## DBTL cycles
 

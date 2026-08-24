@@ -1,12 +1,20 @@
-# Dry Lab — Transcriptome-wide C-to-U RNA-editing screening
+# Dry lab: evidence-aware labels for AI-guided RNA editing
 
-## Overview
+> **Takeaway:** We measured both candidate editing and candidate non-editing directly, then used sequence alone to train LAMAR.
 
-ORCA is our programmable PUF–APOBEC RNA-editing system. To evaluate its transcriptome-wide specificity, we developed a dry-lab workflow that combines three treated and three control RNA-seq libraries with an assembly-harmonized 293T genomic-variant catalogue.
+ORCA combines programmable PUF recognition with APOBEC-mediated C-to-U RNA editing. The experimental challenge is deciding which cytosines should be tested first. Our dry-lab workflow constructs auditable computational labels for this prioritization problem.
 
-The workflow identifies signals that are reproducible after treatment, not called in controls under the same settings, consistent with transcript strand, and not readily explained by known 293T genomic variation. It also provides the evidence and continuous labels used by the downstream LAMAR editing-efficiency model.
+The current workflow replaces the earlier called-site funnel. A site is not a negative merely because REDItools did not call it. Strict negatives must have measurable RNA coverage and zero observed target-ALT reads in every treated and control replicate.
 
-## Input data
+## Biological question
+
+> **Can the 101-nucleotide context around a cytosine identify candidates worth testing with PUF–APOBEC editors?**
+
+The prediction unit is a transcript-oriented sequence centered on C. The output is a candidate-ranking score for experimental prioritization. It is not a predicted editing efficiency or a substitute for wet-lab validation.
+
+## Input evidence
+
+Three treated and three control RNA-seq samples were analysed independently.
 
 | Condition | Replicate | Sample | SRA accession |
 |---|---:|---|---|
@@ -17,296 +25,124 @@ The workflow identifies signals that are reproducible after treatment, not calle
 | Control | 2 | CU517_GC_C2 | SRR27885764 |
 | Control | 3 | CU517_GC_C3 | SRR27885763 |
 
-Each library was processed independently so that replicate support remained visible throughout the analysis.
+The final binary dataset used one MarkDuplicates BAM and one readable index for each sample. All six files were recounted with the same filtering and pileup implementation.
 
-## Workflow
+## Current positive and negative mechanism
 
-![Figure 1. Transcriptome-wide RNA-editing screening workflow](assets/figure1_screening_workflow.svg)
+> **Takeaway:** Positive and negative labels follow separate evidence gates, followed by the same variant and sequence-quality rules.
 
-**Figure 1 | Transcriptome-wide RNA-editing screening workflow.** The RNA-seq branch generates replicate-aware, transcript-oriented C-to-U evidence. In parallel, the external `293T_CG` catalogue is converted from hg18 to GRCh38 and reference-validated. Exact-allele comparison then removes plausible genomic variants while preserving all exclusions for audit.
+![Figure 1. Current computational-positive and strict computational-negative label design](assets/figure1_current_binary_label_design.svg)
 
-```text
-RNA-seq alignment and preprocessing
-→ REDItools2 substitution calling
-→ VEP transcript-strand interpretation
-→ treated and control comparison
-→ 293T catalogue harmonization
-→ exact CHROM:POS:REF:ALT filtering
-→ six-sample base counting for LAMAR labels
-```
+**Figure 1 | Evidence gates for the current LAMAR binary dataset.** Positive candidates came from the broad called-site matrix and were recounted in six BAMs. Strict negatives came from expressed exon cytosines and required complete evidence of zero target-ALT reads. Equal-width paths indicate different label definitions; box area does not represent site count.
 
-### 1. RNA-seq alignment and preprocessing
+The source values and figure provenance are available in [figure_source_data.tsv](assets/figure_source_data.tsv) and [the provenance record](assets/figure1_current_binary_label_design.provenance.json).
 
-Paired-end reads were aligned to the GRCh38 primary assembly with STAR in two-pass mode.<sup>2</sup> GATK `MarkDuplicates` recorded duplicates, and `SplitNCigarReads` processed reads spanning splice junctions.<sup>3</sup>
+### Unified pileup rules
 
-All modules use the same GRCh38 FASTA and chromosome naming convention. Each sample remains separate so that editing support can be evaluated across biological replicates rather than after pooling.
+The positive and negative paths used the same read-counting semantics:
 
-That paragraph describes the intended reproducible preprocessing workflow. The
-actual frozen six-sample label audit used the available Picard MarkDuplicates
-BAM for T1 and original STAR coordinate-sorted BAMs for T2/T3/C1/C2/C3.
-Duplicate-flagged reads were excluded with the same pileup filter, but the five
-STAR inputs had not been duplicate-marked, so their preprocessing histories were
-not identical.
+- mapping quality at least 30;
+- base quality at least 20;
+- unmapped, secondary, QC-failed, duplicate-flagged, and supplementary alignments excluded;
+- paired-end overlaps prevented from contributing duplicate evidence;
+- usable depth defined as the filtered A, C, G, and T total;
+- minimum qualifying usable depth of 20.
 
-### 2. Substitution calling
+Each site retained sample-level usable depth, reference count, target-ALT count, other-ALT count, and target editing rate.
 
-REDItools2 was run independently for all six libraries.<sup>4</sup>
+### Transcript orientation
 
-| Parameter | Function |
-|---|---|
-| `-S` | report positions containing substitutions |
-| `-me 20` | require at least 20 edited reads for a reported call |
-| mapping quality >=20 | remove poorly mapped reads |
-| base quality >=30 | remove low-confidence bases |
+Positive-strand transcript editing appears as genomic C-to-T. Negative-strand transcript editing appears as genomic G-to-A because the transcript is reverse-complemented.
 
-These settings favour strongly supported calls and may miss low-frequency editing. A missing call is therefore treated as a caller non-detection rather than proof of zero alternate reads.
+Every model sequence was normalized to transcript orientation. It contained 101 nucleotides and required C at zero-based index 50. Ambiguous orientation, incomplete sequence, N-containing sequence, and an invalid center base caused exclusion.
 
-### 3. Transcript-oriented interpretation
+## Computational positives
 
-RNA editing must be interpreted in transcript orientation. For a positive-strand transcript, transcript-level C-to-U editing appears as genomic C-to-T. For a negative-strand transcript, the same biological event appears as genomic G-to-A because the transcript is the reverse complement of the genomic reference.
+> **Takeaway:** A positive required a treated-minus-control signal above 0.10, not simply an editing call in one sample.
 
-VEP supplied transcript orientation.<sup>5</sup> The screening workflow retained only alleles consistent with these two rules. Sites assigned to conflicting transcript orientations were treated as ambiguous rather than forced into one category.
-
-### 4. Replicate and control filtering
-
-A candidate entered the treatment-specific table when it was:
+For each site, the workflow calculated treated and control replicate rates, group medians, median absolute deviations, and:
 
 ```text
-called in all three treated replicates
-AND not called in any control replicate
-AND consistent with transcript-level C-to-U editing
+raw_difference = treated_median - control_median
+corrected_editing_efficiency = max(raw_difference, 0)
 ```
 
-The output tables retain replicate-level coverage, alternate-read count, editing rate and call status. The newer LAMAR-label route additionally re-measures A, C, G and T counts directly from all six BAM files so that control non-calls receive continuous measured values.
+A site entered `positive_main` only when:
 
-### 5. 293T catalogue harmonization
+1. corrected editing efficiency was strictly greater than 0.10;
+2. at least two of three treated replicates had usable depth at least 20;
+3. at least two of three control replicates had usable depth at least 20;
+4. the control median editing rate was at most 0.02;
+5. orientation, sequence, WGS, and low-complexity checks passed.
 
-The `293T_CG` catalogue from the HEK293 Genome Project was generated on build36/hg18 coordinates.<sup>1</sup> The catalogue-processing branch converted it to GRCh38, removed unmapped records, checked REF alleles against the project FASTA, normalized the VCF, sorted it and created a tabix index.
+The frozen dataset contained **1,513 computational positives**. The **1,457-site high-confidence subset** additionally required all-six coverage, screening BH-FDR below 0.05, treated MAD at most 0.05, and control MAD at most 0.02.
 
-| Processing stage | Variant count |
-|---|---:|
-| Source PASS biallelic SNPs | 2,914,465 |
-| CrossMap-unmapped records | 5,979 |
-| GRCh38 REF mismatches removed | 22,761 |
-| Final GRCh38 PASS biallelic SNPs | 2,885,725 |
+The pooled-read p-value and BH-FDR are screening statistics. They do not constitute biological-replicate validation or experimental confirmation.
 
-### 6. Exact-allele integration
+## Strict computational negatives
 
-RNA candidates were compared with the catalogue using exact:
+> **Takeaway:** A strict negative was expressed and deeply covered, yet showed zero target-ALT reads in all six samples.
 
-```text
-CHROM : POS : REF : ALT
-```
+Transcript-oriented C centers were enumerated from the GENCODE v50 primary-assembly exon union. Positive-strand transcripts contributed genomic C sites, while negative-strand transcripts contributed genomic G sites that normalized to transcript C.
 
-Coordinate-only matching was avoided because different alternate alleles can occur at the same position. Catalogue matches were written to a separate exclusion table rather than removed silently.
+A site entered the strict negative universe only when:
 
-## Software environments
+1. all six samples had usable depth at least 20;
+2. all six target-ALT counts were exactly zero;
+3. all six target editing rates were therefore zero;
+4. the site was absent from every positive definition and the broad called-candidate matrix;
+5. orientation, sequence, WGS, and low-complexity checks passed.
 
-Run all commands from the repository root. The STAR, GATK and SRA Toolkit executables must already be available on the system. Repository-provided Conda environments cover the REDItools2, catalogue-processing and LAMAR-label stages.
+The frozen universe contained **2,821,734 strict computational negatives**. These are computational negatives with direct expression and coverage evidence. They are not experimentally proven non-editable cytosines.
 
-### REDItools2 environment
+## Shared exclusion rules
 
-```bash
-conda env create -f pipeline/env/reditools2_py2.yml
-conda activate reditools2_py2
-```
+> **Takeaway:** The same central-variant and sequence-complexity checks were applied before data splitting.
 
-This environment preserves the Python 2 and MPI dependencies required by REDItools2.
+A site was excluded when its genomic center occurred in either HEK293T WGS resource, regardless of the reported alternative allele.
 
-### Genomic-catalogue environment
+Low complexity used an OR rule on the complete 101-nucleotide context:
 
-```bash
-conda env create -f pipeline/env/genomic_catalogue.yml
-conda activate rewire_catalogue
-```
+- base-2 single-nucleotide Shannon entropy below 1.20;
+- any homopolymer run at least 20 nucleotides;
+- deterministic dinucleotide-repeat coverage at least 0.80 in either repeat phase.
 
-This environment provides CrossMap, bcftools, samtools, bgzip and tabix.
+Excluded records and trigger reasons were retained for audit. External basewise mappability was unavailable and remains `NA_RESOURCE_MISSING`. Low-complexity filtering is not described as an equivalent mappability test.
 
-### LAMAR training-label environment
+## Leakage-aware dataset splitting
 
-```bash
-conda env create -f pipeline/env/lamar_labels.yml
-conda activate rewire_lamar_labels
-```
+> **Takeaway:** Related biological and sequence examples were grouped before train, development, calibration, and held-out assignments.
 
-This environment provides Python 3, pysam and samtools for direct candidate-site base counting and sequence-linked label construction.
+Any shared gene, genomic center, overlapping same-strand window, or exact 101-nucleotide sequence forced examples into the same leakage group. Splitting was performed on these groups rather than individual rows.
 
-## Script usage
-
-### Set project paths
-
-```bash
-PROJECT=/data/ydx/igem/CU5.17_EGFP_GC_paper
-REF=/data/ydx/igem/GRCh38.primary_assembly.genome.fa
-STAR_INDEX=/data/ydx/igem/STAR_index
-REDITOOLS=/data/ydx/igem/REDItools2
-```
-
-### Download and preprocess the six RNA-seq libraries
-
-```bash
-python3 pipeline/scripts/rna/download_sra_fastq.py \
-  --project "$PROJECT" \
-  --manifest pipeline/config/samples.tsv \
-  --threads 16
-
-python3 pipeline/scripts/rna/run_star_alignment.py \
-  --project "$PROJECT" \
-  --star-index "$STAR_INDEX" \
-  --manifest pipeline/config/samples.tsv \
-  --threads 50
-
-python3 pipeline/scripts/rna/run_gatk_preprocessing.py \
-  --project "$PROJECT" \
-  --reference "$REF" \
-  --manifest pipeline/config/samples.tsv \
-  --java-options=-Xmx16g
-```
-
-### Run REDItools2
-
-```bash
-conda activate reditools2_py2
-
-bash pipeline/scripts/rna/run_reditools_all_samples.sh \
-  "$PROJECT" \
-  "$REF" \
-  "$REDITOOLS" \
-  "$CONDA_PREFIX/bin/python" \
-  30 8 8
-```
-
-The final three values specify MPI processes, concurrent coverage jobs and compression threads.
-
-### Build the union candidate set and annotate transcript orientation
-
-```bash
-python3 pipeline/scripts/rna/reditools_union_to_vcf.py \
-  --manifest pipeline/config/samples.tsv \
-  --reditools-dir "$PROJECT/reditools/tables" \
-  --vcf "$PROJECT/vcf/CU5.17_EGFP_GC.REDItools_union.vcf" \
-  --bed "$PROJECT/vcf/CU5.17_EGFP_GC.REDItools_union.bed"
-
-python3 pipeline/scripts/rna/run_vep_annotation.py \
-  --project "$PROJECT" \
-  --cache /path/to/vep_cache
-```
-
-### Process the 293T catalogue
-
-```bash
-conda activate rewire_catalogue
-
-CATALOGUE_IN=/data/ydx/igem/293T_CG.vcf
-CHAIN=/data/ydx/igem/hg18ToHg38.over.chain.gz
-CATALOGUE_OUT=/data/ydx/igem/293T_CG_GRCh38
-
-bash pipeline/scripts/catalogue/process_293T_CG_to_GRCh38.sh \
-  --input "$CATALOGUE_IN" \
-  --reference "$REF" \
-  --chain "$CHAIN" \
-  --outdir "$CATALOGUE_OUT" \
-  --threads 16
-```
-
-### Run the strict evidence integration route
-
-```bash
-bash pipeline/scripts/rna/build_candidate_depth_tables.sh \
-  "$PROJECT" \
-  "$PROJECT/vcf/CU5.17_EGFP_GC.REDItools_union.bed" \
-  pipeline/config/samples.tsv
-
-python3 pipeline/scripts/rna/filter_c_to_u_and_compare.py \
-  --manifest pipeline/config/samples.tsv \
-  --reditools-dir "$PROJECT/reditools/tables" \
-  --vep "$PROJECT/vep/CU5.17_EGFP_GC.vep.tsv" \
-  --depth-dir "$PROJECT/candidate_depth" \
-  --output-dir "$PROJECT/final" \
-  --variant-catalogue-vcf "$CATALOGUE_OUT/293T_CG.GRCh38.PASS.biallelic.SNV.vcf.gz" \
-  --min-treated-reps 3 \
-  --max-control-called-reps 0 \
-  --min-depth-all-reps 20
-```
-
-The frozen 3,333-site result was generated through the documented compatibility route because the original candidate-depth directory was unavailable at final catalogue integration. The strict route above is the preferred route for regeneration.
-
-### Generate continuous labels for LAMAR
-
-Use the broad strand-consistent site matrix rather than only the final selected candidates, because training only on already-filtered sites would create a selected-positive dataset.
-
-```bash
-conda activate rewire_lamar_labels
-
-bash pipeline/scripts/rna/build_lamar_training_labels.sh \
-  "$PROJECT" \
-  "$REF" \
-  "$PROJECT/final/CU5.17_EGFP_GC.site_matrix.tsv.gz" \
-  pipeline/config/samples.tsv
-```
-
-An optional exact-allele metadata table can be supplied as a fifth argument to add gene, transcript, PUF-target, similarity, distance and region features.
-
-The principal Model 2 label is:
-
-```text
-corrected_editing_efficiency = max(
-    0,
-    median(treated editing rates) - median(control editing rates)
-)
-```
-
-For the frozen audited labels, `training_eligible` requires at least 2/3 covered
-replicates in each group; high confidence requires all 3+3 and the frozen
-replicate-consistency thresholds. Missing control evidence remains missing and
-is never relabeled as zero. Valid corrected-zero labels are retained.
-
-Use `prepare_lamar_finetuning_handoff.py` for overlap-cluster and exact-sequence
-grouped splits. The 3,333 final candidates are a subset of the broad matrix and
-cannot be an independent test set for broad-matrix training.
-
-## Results
-
-| Evidence layer | Number of sites |
-|---|---:|
-| Strand-consistent site matrix | 9,930 |
-| Called in all three treated replicates | 4,778 |
-| Treatment-specific before catalogue comparison | 3,349 |
-| Exact 293T catalogue overlaps | 16 |
-| Final catalogue-filtered screening candidates | 3,333 |
-
-| Model-facing population | Number of sites | Use |
+| Split | Computational positives | Intended use |
 |---|---:|---|
-| Broad called-candidate universe | 9,930 | Audited source universe; not a complete negative universe. |
-| All eligible | 9,428 | Sensitivity analysis. |
-| High confidence | 8,540 | Recommended primary scalar-regression dataset. |
-| High confidence without elevated control background | 7,351 | Stricter sensitivity analysis. |
-| Eligible corrected-zero examples | 1,564 | Valid examples that must be retained. |
-| Final selected candidates | 3,333 | Screening subset, not an independent model test set. |
+| Train | **1,028** | Model fitting and train-only negative sampling |
+| Development | **159** | Architecture and configuration selection |
+| Calibration | **165** | Probability calibration and threshold analysis |
+| Held-out test | **161** | Frozen final evaluation |
 
-The 16 exact catalogue matches remain available in a separate exclusion table. The 3,333 retained sites form the final dry-lab screening set for prioritization and experimental validation of the ORCA PUF–APOBEC system. They should not be interpreted as 3,333 confirmed biological off-targets.
+The public release audited zero cross-split overlap by gene, leakage group, genomic key, and exact sequence.
 
-## Contribution
+## Negative sampling for model training
 
-This dry-lab model provides:
+The complete strict negative universe was retained. Training did not relabel uncovered sites or copy negatives to achieve a target ratio.
 
-1. replicate-aware analysis of three treated and three control libraries;
-2. transcript-strand-aware C-to-U interpretation;
-3. a reproducible hg18-to-GRCh38 293T catalogue conversion;
-4. exact-allele genomic filtering;
-5. separate retained, excluded and summary outputs;
-6. direct six-sample base counting and continuous labels for LAMAR;
-7. twelve documented DBTL cycles covering analysis, implementation and evidence boundaries.
+The final ensemble combined members trained with random strict negatives and members trained with a 50:50 mixture of random and NC-matched strict negatives. The matched component followed GC 60%, TC 28%, CC 8%, and AC 4%. PUF motif status was not used to define a negative.
 
-## Limitations
+Coverage, expression, annotation, and negative type supported filtering, matching, stratification, and auditing. The default LAMAR input remained the 101-nucleotide sequence alone.
 
-The frozen legacy result does not contain independent candidate-site depth and base counts for control non-calls. A missing control call is therefore not proof of zero editing. The newer LAMAR-label route addresses this limitation when the six BAM files are available, but the frozen counts should still be reported with the original evidence boundary.
+## Why the earlier funnel was retired
 
-The 293T catalogue is external to the exact experimental cell batch. Absence from the catalogue does not prove that a retained site is free of a subline-specific genomic variant.
+The earlier figure summarized successive filters applied to a called-site universe. It was useful for reconstructing the first screening pipeline, but it did not define a complete negative population.
 
-RNA-seq mismatches may also arise from alignment ambiguity, sequencing artefacts, repetitive sequence or endogenous modification. Orthogonal validation remains necessary.
+Presenting that funnel as the current model dataset would conflate three different concepts: called candidates, computational positives, and strict computational negatives. The historical counts remain in the [DBTL archive](../dbtl/README.md) and [legacy results](../results/README.md), but they are no longer the headline dataset figure.
 
-The stringent edited-read threshold favours specificity and may miss low-frequency editing.
+## Scientific interpretation
+
+The strongest supported conclusion is that the workflow constructed sequence-linked computational labels with explicit treated, control, coverage, variant, complexity, and leakage checks.
+
+It does not establish that every computational positive is experimentally editable. It also does not establish that every strict computational negative is biologically impossible to edit. Prospective PUF–APOBEC experiments remain necessary.
 
 The broad 9,930-site matrix is derived from called candidate sites rather than a
 complete transcriptome-wide negative universe. Sequence-matched, sufficiently
@@ -315,11 +151,13 @@ leakage-safe splitting do not constitute experimental or biological validation.
 
 ## Reproducibility
 
-- `pipeline/` contains executable code, environment files and commands.
-- `dbtl/` contains twelve development cycles, failure logs and decisions.
-- `results/` contains the frozen count summary.
-- `pipeline/CATALOGUE_PROVENANCE.md` records catalogue source and quality control.
-- `pipeline/LAMAR_TRAINING_LABELS.md` documents the Model 1 to Model 2 handoff.
+- [Current binary label specification](../pipeline/LAMAR_BINARY_LABEL_DESIGN.md)
+- [Figure source data](assets/figure_source_data.tsv)
+- [Figure provenance](assets/figure1_current_binary_label_design.provenance.json)
+- [Sample manifest](../pipeline/config/samples.tsv)
+- [Historical DBTL record](../dbtl/README.md)
+- [Legacy continuous-label route](../pipeline/LAMAR_TRAINING_LABELS.md)
+- [Frozen binary dataset and model release](https://github.com/pdx12320/PUF_fine_tuning_version1)
 
 ## References
 
@@ -328,11 +166,3 @@ leakage-safe splitting do not constitute experimental or biological validation.
 3. McKenna, A. *et al.* The Genome Analysis Toolkit. *Genome Research* **20**, 1297–1303 (2010).
 4. Picardi, E. and Pesole, G. REDItools. *Bioinformatics* **29**, 1813–1814 (2013).
 5. McLaren, W. *et al.* The Ensembl Variant Effect Predictor. *Genome Biology* **17**, 122 (2016).
-6. Zhao, H. *et al.* CrossMap. *Bioinformatics* **30**, 1006–1007 (2014).
-7. Danecek, P. *et al.* Twelve years of SAMtools and BCFtools. *GigaScience* **10**, giab008 (2021).
-
-## Code availability
-
-All source code, environment files, DBTL records, quality-control documentation and reproducibility materials are available on GitHub:
-
-**[REWIRE RNA-editing pipeline repository](https://github.com/pdx12320/REWIRE-RNA-editing-pipeline)**
