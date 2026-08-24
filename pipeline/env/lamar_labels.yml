@@ -2,8 +2,10 @@ name: rewire_lamar_labels
 channels:
   - conda-forge
   - bioconda
-  - defaults
 dependencies:
-  - python=3.11
-  - pysam
-  - samtools
+  # Supported repository environment, not the frozen production interpreter.
+  - python=3.12
+  - pysam=0.24.*
+  - samtools=1.23.*
+  # Optional acceleration for Fisher exact tests. The code has a stdlib fallback.
+  - scipy=1.18.*

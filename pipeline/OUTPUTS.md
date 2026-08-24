@@ -70,6 +70,35 @@ The production audit route writes immutable timestamped directories under
 checksums pass. See [`LAMAR_BACKGROUND_CORRECTION.md`](LAMAR_BACKGROUND_CORRECTION.md)
 for the complete file manifest, recovery behavior and frozen QC counts.
 
+The frozen audit used a Picard MarkDuplicates BAM for T1 and original STAR
+coordinate-sorted BAMs for T2/T3/C1/C2/C3. Duplicate-flagged reads were excluded
+consistently, but the preprocessing histories were not identical.
+
+## LAMAR fine-tuning handoff outputs
+
+```text
+CU5.17_lamar_finetuning_handoff/
+├── CU5.17_lamar_all_eligible.tsv.gz
+├── CU5.17_lamar_high_confidence.tsv.gz
+├── CU5.17_lamar_high_confidence_low_control.tsv.gz
+├── CU5.17_lamar_excluded.tsv.gz
+├── CU5.17_lamar_splits.tsv.gz
+├── data_dictionary.tsv
+├── split_qc.json
+├── handoff_manifest.json
+├── checksums.sha256
+└── README.md
+```
+
+Use the high-confidence table as the primary dataset. Use all eligible rows and
+the stricter low-control-background table as sensitivity analyses. The split
+table covers every eligible row and guarantees that no allele key, overlapping
+101-nt genomic cluster or identical sequence crosses splits.
+
+`data/processed/` contains only the compact public model-facing subset of these
+files. BAM, FASTQ, FASTA, full pileups and server-specific symlinks remain
+outside Git.
+
 ## Legacy-table compatibility outputs
 
 ```text

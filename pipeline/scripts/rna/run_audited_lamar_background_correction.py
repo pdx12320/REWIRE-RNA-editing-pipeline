@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Auditable six-replicate background correction for CU5.17 EGFP GC sites.
 
-This is the production/audit route used for the frozen 9,930-site run.  It
-complements the smaller composable label scripts by validating the complete
-input set, investigating the T1 preprocessing exception, checking candidate
+This preserves the frozen 9,930-site audit logic while requiring a corrected,
+uniform six-BAM input set. It complements the composable label scripts by
+validating the complete input set, checking preprocessing provenance, candidate
 coordinates and alleles against GRCh38, directly re-counting 20 sites in all
 six BAMs, and publishing a run atomically only after every check passes.
 """
@@ -55,7 +55,7 @@ CONTROLS = tuple(x[0] for x in SAMPLES if x[1] == "control")
 BASES = ("A", "C", "G", "T")
 FILTER_FLAGS = 0x4 | 0x100 | 0x200 | 0x400 | 0x800
 FILTER_DESCRIPTION = (
-    "MAPQ>=30;BQ>=20;exclude_unmapped,secondary,qcfail,duplicate,supplementary;"
+    "MAPQ>=30;BQ>=20;NH=1;exclude_unmapped,secondary,qcfail,duplicate,supplementary;"
     "ignore_overlapping_mates;include_orphans;ACGT_only"
 )
 STAR_T1_NAME = "CU517_GC_T1.Aligned.sortedByCoord.out.bam"
@@ -262,28 +262,10 @@ def ensure_bam_index(bam_path: Path, samtools: Path, threads: int, logger: RunLo
 
 def choose_bams(project: Path, samtools: Path, threads: int, logger: RunLogger):
     selected = {}
-    t1_candidates = sorted(project.rglob(STAR_T1_NAME))
-    valid_t1 = []
-    for candidate in t1_candidates:
-        result = logger.command([str(samtools), "quickcheck", "-v", str(candidate)], check=False)
-        if result.returncode == 0:
-            with pysam.AlignmentFile(str(candidate), "rb") as bam:
-                if bam.header.to_dict().get("HD", {}).get("SO") == "coordinate":
-                    valid_t1.append(candidate)
-    if valid_t1:
-        t1 = valid_t1[0]
-        t1_reason = "original STAR coordinate-sorted T1 found and validated"
-    else:
-        t1 = project / "bam/markduplicates/CU517_GC_T1.markduplicates.bam"
-        t1_reason = (
-            "no original STAR T1 BAM found recursively; used valid coordinate-sorted Picard "
-            "MarkDuplicates BAM (duplicates marked, not removed)"
-        )
-    selected["CU517_GC_T1"] = (t1, t1_reason)
-    for sample in SAMPLE_NAMES[1:]:
+    for sample in SAMPLE_NAMES:
         selected[sample] = (
-            project / f"bam/star/{sample}.Aligned.sortedByCoord.out.bam",
-            "original STAR coordinate-sorted BAM",
+            project / f"bam/splitncigarreads/{sample}.splitncigarreads.bam",
+            "uniform STAR -> MarkDuplicates -> SplitNCigarReads analysis-ready BAM",
         )
     for sample, (bam_path, _) in selected.items():
         if not bam_path.is_file():
@@ -294,8 +276,26 @@ def choose_bams(project: Path, samtools: Path, threads: int, logger: RunLogger):
             sort_order = bam.header.to_dict().get("HD", {}).get("SO")
             if sort_order != "coordinate":
                 raise RuntimeError(f"BAM is not coordinate sorted ({sort_order}): {bam_path}")
+            programs = json.dumps(bam.header.to_dict().get("PG", []), sort_keys=True).lower()
+            for required_program in ("star", "markduplicates", "splitncigarreads"):
+                if required_program not in programs:
+                    raise RuntimeError(
+                        f"BAM lacks {required_program} preprocessing provenance: {bam_path}"
+                    )
+            inspected = missing_nh = 0
+            for read in bam.fetch(until_eof=True):
+                if read.is_unmapped or read.is_secondary or read.is_supplementary:
+                    continue
+                inspected += 1
+                missing_nh += int(not read.has_tag("NH"))
+                if inspected >= 100000:
+                    break
+            if inspected == 0 or missing_nh:
+                raise RuntimeError(
+                    f"BAM NH audit failed for {bam_path}: inspected={inspected}, missing_NH={missing_nh}"
+                )
             bam.check_index()
-    return selected, t1_candidates
+    return selected, []
 
 
 def candidate_key(row: Mapping[str, str]) -> tuple[str, int, str, str]:
@@ -492,6 +492,8 @@ def count_sample_sites(
                                 continue
                             if alignment.flag & FILTER_FLAGS or alignment.mapping_quality < min_mapq:
                                 continue
+                            if not alignment.has_tag("NH") or int(alignment.get_tag("NH")) != 1:
+                                continue
                             qualities = alignment.query_qualities
                             if qualities is None or qualities[query_position] < min_baseq:
                                 continue
@@ -531,6 +533,7 @@ def load_counts_from_pileup(
         "T_count",
         "forward_alt_count",
         "reverse_alt_count",
+        "filters_used",
     }
     missing = required.difference(fields)
     if missing:
@@ -541,6 +544,8 @@ def load_counts_from_pileup(
         sample: {} for sample in SAMPLE_NAMES
     }
     for row in rows:
+        if "NH=1" not in str(row.get("filters_used", "")):
+            raise RuntimeError("Reusable pileup was not generated with the required NH=1 filter")
         key = (str(row["chrom"]), int(row["position"]), str(row["ref"]), str(row["alt"]))
         sample = str(row["sample"])
         if key not in expected:
@@ -961,6 +966,22 @@ def run_direct_validation(
     selected_keys = {candidate_key(row) for row in selected}
     for sample in SAMPLE_NAMES:
         bam_path = selected_bams[sample][0]
+        nh1_bam = run_dir / f"direct_validation_{sample}.NH1.bam"
+        logger.command(
+            [
+                str(samtools),
+                "view",
+                "-b",
+                "-L",
+                str(bed),
+                "-d",
+                "NH:1",
+                "-o",
+                str(nh1_bam),
+                str(bam_path),
+            ]
+        )
+        logger.command([str(samtools), "index", str(nh1_bam)])
         result = logger.command(
             [
                 str(samtools),
@@ -978,7 +999,7 @@ def run_direct_validation(
                 str(bed),
                 "-f",
                 str(reference),
-                str(bam_path),
+                str(nh1_bam),
             ]
         )
         direct = {}
@@ -1432,9 +1453,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         final_summary = dataset_results["final"][1]
         repository_audit = f"""# Repository audit
 
-## Existing project
+## Server-side analysis directory at run time
 
-- The project is not a Git working tree and contains no pre-existing automated test suite.
+- The server-side project analysis directory was not a Git working tree at the time of this frozen run. The public repository is separate and now contains automated tests.
 - Existing candidate construction code: `{project / 'helpers/filter_c_to_u_and_compare.py'}`.
 - The repository's Lamar label route documents and defaults to a 101-nt transcript-oriented window; this is the evidence for the 101-nt context used here.
 - Existing genomic-C export documentation uses coverage 20, supporting the `minimum_usable_depth=20` default.
@@ -1445,17 +1466,19 @@ def main(argv: Sequence[str] | None = None) -> int:
 - Both selected tables are GRCh38 1-based. All rows match the FASTA reference allele at `position-1`; the competing position-as-0-based hypothesis matches only a minority by chance (see `reference_qc.txt`).
 - Candidate, BAM, and FASTA chromosome names and lengths passed exact compatibility checks. The pipeline aborts on any mismatch rather than emitting zero coverage.
 
-## T1 consistency investigation
+## Six-BAM preprocessing audit
 
-- Recursive search for `{STAR_T1_NAME}` returned {len(original_t1_candidates)} file(s).
 - Selected T1: `{t1_path}`.
 - Reason: {t1_reason}.
-- The Picard metrics command records `REMOVE_DUPLICATES=false` and `REMOVE_SEQUENCING_DUPLICATES=false`; duplicate reads were marked, not removed. Duplicate-flagged alignments were counted in `bam_qc.tsv`.
-- This is a real preprocessing inconsistency: T1 is MarkDuplicates output, while T2/T3/C1/C2/C3 are original STAR coordinate-sorted BAMs. All duplicate-flagged alignments are excluded by the same pileup flag filter, but the five STAR BAMs were never duplicate-marked, so identical preprocessing cannot be claimed.
+- Every selected sample is the `splitncigarreads` output of the same STAR →
+  MarkDuplicates → SplitNCigarReads route. The run aborts when a file, index,
+  coordinate sort order, required `@PG` record, or sampled `NH` tag is missing.
+- Counted observations additionally require `NH=1`; duplicate-marked,
+  secondary, supplementary, unmapped and QC-failed reads remain excluded.
 
 ## Counting and labels
 
-- MAPQ >= {args.min_mapq}; base quality >= {args.min_baseq}; usable depth is A+C+G+T after filters.
+- MAPQ >= {args.min_mapq}; base quality >= {args.min_baseq}; `NH=1`; usable depth is A+C+G+T after filters.
 - Unmapped, secondary, QC-failed, duplicate-marked, and supplementary alignments are excluded. Overlapping mates are collapsed by pileup.
 - A replicate is sufficiently covered at usable depth >= {args.min_coverage}. A group is sufficient at >= {args.min_group_replicates}/3 covered replicates; high confidence additionally requires all 3+3 and treated MAD <= 0.05 and control MAD <= 0.02.
 - Control background >= 0.02 is flagged as elevated, based on the repository's existing control maximum default.

@@ -2,27 +2,29 @@ name: LAMAR label tests
 
 on:
   push:
-    paths:
-      - "pipeline/scripts/rna/build_lamar_training_table.py"
-      - "pipeline/scripts/rna/run_audited_lamar_background_correction.py"
-      - "tests/test_lamar_training_label_statistics.py"
-      - "tests/test_audited_lamar_background_correction.py"
-      - ".github/workflows/lamar-label-tests.yml"
   pull_request:
-    paths:
-      - "pipeline/scripts/rna/build_lamar_training_table.py"
-      - "pipeline/scripts/rna/run_audited_lamar_background_correction.py"
-      - "tests/test_lamar_training_label_statistics.py"
-      - "tests/test_audited_lamar_background_correction.py"
-      - ".github/workflows/lamar-label-tests.yml"
 
 jobs:
-  unit-tests:
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - name: Run unit tests
+          python-version: ${{ matrix.python-version }}
+      - name: Install minimal test and optional baseline dependencies
+        run: python -m pip install "scikit-learn==1.7.*"
+      - name: Run unit and synthetic handoff tests
         run: python -m unittest discover -s tests -p "test_*.py" -v
+      - name: Compile Python sources
+        run: python -m compileall pipeline/scripts examples tests
+      - name: Validate shell syntax
+        run: find pipeline -type f -name "*.sh" -print0 | xargs -0 -n1 bash -n
+      - name: Check whitespace errors
+        run: git diff --check
+      - name: Verify synthetic leakage assertions ran
+        run: python -m unittest discover -s tests -p "test_lamar_finetuning_handoff.py" -v

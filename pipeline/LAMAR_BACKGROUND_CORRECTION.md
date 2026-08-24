@@ -10,10 +10,10 @@ count, label, sequence and direct-recount checks pass.
 - verifies or creates the FASTA `.fai` and records all chromosome lengths;
 - audits candidate schemas, GRCh38 1-based coordinates, reference alleles,
   chromosome naming, duplicate alleles and strand-specific C>T/G>A rules;
-- searches recursively for the original STAR T1 BAM and records the actual T1
-  choice instead of claiming identical preprocessing;
+- requires the analysis-ready `splitncigarreads` BAM for every sample and audits
+  STAR, MarkDuplicates and SplitNCigarReads provenance;
 - independently counts A/C/G/T in T1, T2, T3, C1, C2 and C3 with MAPQ 30,
-  base quality 20 and consistent flag filters;
+  base quality 20, `NH=1` and consistent flag filters;
 - distinguishes adequate zero-alt coverage, low coverage, missing data and
   technical failure;
 - requires sufficient treated and control coverage before assigning a corrected
@@ -39,7 +39,38 @@ Final table:  final_with_293T_catalogue/CU5.17_EGFP_GC.treatment_specific.tsv.gz
 
 The broad 9,930-site matrix is the primary label universe. The post-catalogue
 3,333-site table is processed separately and must not be assumed to be a balanced
-or independent Lamar training set.
+or independent Lamar training set. It is a subset of the broad matrix and must
+not be used as an independent test set when broad-matrix sites are used for
+training.
+
+## Archived frozen run versus the current input boundary
+
+The repository's intended preprocessing route runs STAR and duplicate handling
+consistently for every sample. The completed 2026-07-15 audit used the files that
+were actually available on the server:
+
+| Samples | Frozen BAM input | Duplicate history |
+|---|---|---|
+| T1 | Coordinate-sorted Picard MarkDuplicates BAM | Duplicates marked, not removed. |
+| T2, T3, C1, C2, C3 | Original STAR coordinate-sorted BAMs | Duplicate marking had not been applied. |
+
+The pileup excluded reads carrying the duplicate flag consistently in all six
+inputs. Nevertheless, the five STAR BAMs did not contain Picard duplicate marks,
+so the preprocessing histories were not identical. This limitation is frozen in
+`bam_qc.tsv`, `repository_audit.md` and the analysis summary.
+
+The current script no longer selects those mixed inputs. It requires all six
+files at `bam/splitncigarreads/<sample>.splitncigarreads.bam`, checks their
+preprocessing `@PG` records and sampled `NH` tags, and counts only `NH=1` reads.
+Run `rebuild_strict_cu517_dataset.sh` to recreate the six BAMs and the full-C
+training universe. The archived 2026-07-15 counts below remain historical
+provenance and are not relabeled as results of the corrected route.
+
+`training_eligible=1` requires the frozen sequence/orientation checks and at
+least 2 of 3 sufficiently covered replicates in both treated and control groups.
+`label_confidence=high` is stricter: all 3+3 replicates must be covered and the
+treated/control MAD consistency thresholds must pass. These definitions are not
+changed by the downstream handoff builder.
 
 ## Run
 
@@ -61,6 +92,23 @@ Do not start a second process while one is active. Monitor with:
 tail -f "$PROJECT/lamar_background_corrected/launcher.log"
 ```
 
+## Software-version boundary
+
+The frozen production manifest records Python 3.14.6 (free-threading,
+conda-forge), pysam 0.24.0, samtools 1.23.1 and SciPy 1.18.0. Those exact values
+are preserved in `pipeline/env/lamar_labels_production_versions.txt`.
+
+Repository code and synthetic handoff tests support Python 3.11 and 3.12 in CI.
+The maintained BAM environment pins the currently evidenced pysam 0.24.x and
+samtools 1.23.x families; end-to-end production evidence is specifically at
+pysam 0.24.0 and samtools 1.23.1. Python 3.11/3.12 support is not a claim that
+those interpreters exactly reproduce the Python 3.14 production runtime.
+
+SciPy is optional in the audited statistics code. When available,
+`scipy.stats.fisher_exact` is used; otherwise the repository uses its tested
+stdlib two-sided exact-test fallback. The optional scalar baseline uses
+scikit-learn 1.7.x from `pipeline/env/lamar_scalar_baseline.yml`.
+
 ## Safe recovery from an interrupted post-pileup run
 
 If all `9,930 × 6 = 59,580` broad pileup rows were written before an interruption,
@@ -72,7 +120,8 @@ bash pipeline/scripts/rna/run_audited_lamar_background_correction.sh \
   --reuse-pileup /path/to/incomplete_run/six_sample_pileup_counts.tsv.gz
 ```
 
-The recovery loader aborts on missing columns, unexpected samples or alleles,
+The recovery loader also requires `filters_used` to record `NH=1` and aborts on
+legacy caches, missing columns, unexpected samples or alleles,
 duplicate sample/allele rows, incorrect row count, or depth/base-count mismatch.
 The reused table is recorded in `input_manifest.tsv`.
 
@@ -132,4 +181,24 @@ the experimentally correct PUF target sequence, and a documented weighting rule.
 The PUF target must not be inferred from the sample name.
 
 Avoid random row-level splits because nearby 101-nt windows can overlap. Prefer
-chromosome-, gene-, transcript- or genomic-cluster-grouped evaluation.
+the repository's `gene_disjoint` split for annotated strict data; it keeps a
+gene in one partition and also merges position±50 genomic intervals and exact
+duplicate sequences. The supported chromosome-held-out strategy measures a
+stronger genomic distribution shift.
+
+The validated derived handoff contains 9,428 all-eligible rows, including 1,564
+valid zero corrected labels; 8,540 rows are high confidence and are recommended
+for the primary analysis. The 7,351 high-confidence rows without the elevated
+control-background flag form a stricter sensitivity analysis.
+
+```bash
+python pipeline/scripts/rna/prepare_lamar_finetuning_handoff.py \
+  --labels /path/to/background_corrected_labels.tsv.gz \
+  --metadata /path/to/lamar_ready_metadata.tsv.gz \
+  --output-dir /path/to/CU5.17_lamar_finetuning_handoff \
+  --seed 20260715 \
+  --split-strategy overlap_cluster
+```
+
+This packaging step validates and partitions frozen derived tables only. It does
+not rerun BAM pileups or alter scientific counts and thresholds.

@@ -1,7 +1,10 @@
 import argparse
 import csv
+import json
 import subprocess
 from pathlib import Path
+
+from audit_uniform_bams import audit_all
 
 
 def run(cmd, log_path):
@@ -16,6 +19,15 @@ def main():
     ap.add_argument("--reference", required=True)
     ap.add_argument("--manifest", default="config/samples.tsv")
     ap.add_argument("--java-options", default="-Xmx16g")
+    ap.add_argument("--expected-samples", type=int, default=6)
+    ap.add_argument("--expected-contig", default="EGFP_GC_reporter")
+    ap.add_argument(
+        "--audit-output",
+        type=Path,
+        default=None,
+        help="JSON audit path (default: PROJECT/audit/uniform_bams.json)",
+    )
+    ap.add_argument("--force", action="store_true", help="Replace only this script's per-sample preprocessing outputs")
     args = ap.parse_args()
 
     project = Path(args.project).resolve()
@@ -30,6 +42,8 @@ def main():
 
     with open(args.manifest) as fh:
         samples = list(csv.DictReader(fh, delimiter="\t"))
+    if args.expected_samples and len(samples) != args.expected_samples:
+        raise SystemExit(f"Expected {args.expected_samples} samples, found {len(samples)}")
 
     for meta in samples:
         sample = meta["sample"]
@@ -38,6 +52,14 @@ def main():
         mark = mark_dir / f"{sample}.markduplicates.bam"
         split = split_dir / f"{sample}.splitncigarreads.bam"
         metrics = metrics_dir / f"{sample}.markduplicates.txt"
+        if args.force:
+            generated = [
+                rg, Path(str(rg) + ".bai"), mark, Path(str(mark) + ".bai"),
+                split, Path(str(split) + ".bai"), metrics,
+            ]
+            for path in generated:
+                if path.is_file():
+                    path.unlink()
         if not star.exists():
             raise SystemExit(f"Missing STAR BAM: {star}")
 
@@ -71,6 +93,20 @@ def main():
             run(cmd, log_dir / f"{sample}.splitncigarreads.log")
             subprocess.run(["samtools", "index", str(split)], check=True)
         subprocess.run(["samtools", "quickcheck", "-v", str(split)], check=True)
+
+    audit_output = args.audit_output or (project / "audit" / "uniform_bams.json")
+    try:
+        audit = audit_all(
+            Path(args.manifest),
+            split_dir,
+            Path(audit_output),
+            args.expected_samples,
+            100000,
+            args.expected_contig or None,
+        )
+    except Exception as error:
+        raise SystemExit(f"Uniform BAM audit failed: {error}")
+    print(json.dumps(audit, indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":

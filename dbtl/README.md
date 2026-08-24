@@ -6,9 +6,12 @@ This folder records how ORCA developed from an RNA-seq screening idea into an au
 
 Identify transcript-oriented C-to-U screening candidates that were called reproducibly in three treated libraries, not called in three controls under the original REDItools2 settings, consistent with transcript strand and absent from the harmonized 293T catalogue by exact allele. Then recover direct six-sample base counts so Model 2 can use continuous, background-corrected editing labels rather than caller presence alone.
 
-The frozen 3,333-site set remains a screening set because the legacy table does not contain independent control-site depth and base counts for control non-calls. Cycle 11 adds the executable route required to regenerate those counts from the BAM files.
+The frozen 3,333-site set remains a screening subset. Cycle 11 added the
+executable count route, and cycle 12 completed the six-sample audit. The broad
+audit directly measured control-site bases; a control caller non-call was never
+treated as a zero rate.
 
-![ORCA ten-cycle DBTL roadmap](assets/figure_dbtl_roadmap.svg)
+![ORCA twelve-cycle DBTL roadmap](assets/figure_dbtl_roadmap.svg)
 
 ## Twelve cycles
 
@@ -50,8 +53,13 @@ broad strand-consistent candidate universe
 → direct A/C/G/T counts in three treated and three control BAMs
 → transcript-oriented sequence windows
 → median-treated minus median-control continuous labels
-→ LAMAR training with gene/transcript-grouped evaluation
+→ overlap-cluster and exact-sequence-grouped LAMAR evaluation
 ```
+
+The actual frozen audit used the available Picard MarkDuplicates BAM for T1 and
+original STAR coordinate-sorted BAMs for T2/T3/C1/C2/C3. Duplicate-flagged reads
+were excluded consistently, but the preprocessing histories were not identical.
+The intended future route remains uniform preprocessing of every sample.
 
 ## Repository relationship
 

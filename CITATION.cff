@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: >-
+  Please cite this software if you use it. Author names, affiliations, ORCIDs,
+  version and publication metadata require confirmation by the project team.
+title: REWIRE RNA-editing pipeline
+type: software
+authors:
+  - name: REWIRE RNA-editing pipeline contributors (confirmation required)
+repository-code: https://github.com/pdx12320/REWIRE-RNA-editing-pipeline
+license: MIT
+abstract: >-
+  A transcriptome-wide RNA-editing screening workflow with audited six-sample
+  background-corrected labels and a leakage-resistant LAMAR scalar-regression
+  handoff.
+keywords:
+  - RNA editing
+  - C-to-U editing
+  - LAMAR
+  - reproducible bioinformatics

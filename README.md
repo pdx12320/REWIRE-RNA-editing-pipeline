@@ -39,6 +39,76 @@ The current binary route measures quality-filtered A, C, G, and T counts in all 
 
 See [LAMAR training-label generation](pipeline/LAMAR_TRAINING_LABELS.md) for the legacy continuous-label route and [audited background correction](pipeline/LAMAR_BACKGROUND_CORRECTION.md) for its frozen QC record.
 
+## Model teammate quick start
+
+The handoff builder is stdlib-only. The optional baseline environment adds
+scikit-learn and uses Python 3.12; CI also tests the repository on Python 3.11.
+
+```bash
+conda env create -f pipeline/env/lamar_scalar_baseline.yml
+conda activate rewire_lamar_scalar
+
+python -m unittest discover -s tests -p "test_*.py" -v
+
+# Inspect the committed production split QC embedded in the manifest.
+python -m json.tool data/processed/handoff_manifest.json
+
+# Run directly on the committed recommended-primary split assignments.
+python pipeline/scripts/rna/export_lamar_scalar_regression.py \
+  --input data/processed/CU5.17_lamar_splits.tsv.gz \
+  --output /tmp/CU5.17_lamar_scalar_high_confidence.tsv.gz
+
+python examples/train_scalar_baseline.py \
+  --input data/processed/CU5.17_lamar_splits.tsv.gz \
+  --subset high_confidence \
+  --output-json /tmp/CU5.17_scalar_baseline_metrics.json
+
+# Rebuild a full handoff later from the two frozen audit inputs.
+
+LABELS=/path/to/background_corrected_labels.tsv.gz
+METADATA=/path/to/lamar_ready_metadata.tsv.gz
+HANDOFF=/path/to/CU5.17_lamar_finetuning_handoff
+
+python pipeline/scripts/rna/prepare_lamar_finetuning_handoff.py \
+  --labels "$LABELS" \
+  --metadata "$METADATA" \
+  --output-dir "$HANDOFF" \
+  --seed 20260715 \
+  --split-strategy overlap_cluster
+
+python -m json.tool "$HANDOFF/split_qc.json"
+
+python pipeline/scripts/rna/export_lamar_scalar_regression.py \
+  --input "$HANDOFF/CU5.17_lamar_splits.tsv.gz" \
+  --output "$HANDOFF/CU5.17_lamar_scalar_high_confidence.tsv.gz"
+
+python examples/train_scalar_baseline.py \
+  --input "$HANDOFF/CU5.17_lamar_splits.tsv.gz" \
+  --subset high_confidence \
+  --output-json "$HANDOFF/scalar_baseline_metrics.json"
+```
+
+Do not add a random row-level split after export. `center_index=50` is the
+zero-based nucleotide position before tokenization; verify any shift introduced
+by `[CLS]` or other tokenizer special tokens instead of hard-coding model token
+index 51.
+
+## Model-facing datasets
+
+| Dataset or population | Rows | Recommended use |
+|---|---:|---|
+| Broad called-candidate universe | 9,930 | Audited source universe; not a complete transcriptome-wide negative universe. |
+| All training-eligible | 9,428 | Sensitivity analysis; eligibility allows at least 2/3 sufficiently covered replicates per group. |
+| High confidence | 8,540 | **Recommended primary fine-tuning dataset**; requires all 3+3 covered replicates and frozen replicate-consistency thresholds. |
+| High confidence, low control background | 7,351 | Stricter sensitivity analysis. |
+| Zero corrected labels among eligible rows | 1,564 | Keep as valid background-corrected examples; do not delete or relabel. |
+| Final selected candidates | 3,333 | Screening/prioritization subset of the broad matrix; never use as an independent test set against broad-matrix training. |
+
+The broad 9,930-site universe is derived from called candidate sites. A future
+negative-set improvement is to add sequence-matched, sufficiently covered,
+uncalled transcript-oriented cytidines. The current handoff does not invent
+those sites, `puf_target_seq`, `label_total_count`, or non-center token labels.
+
 ## Repository map
 
 | Resource | Purpose |

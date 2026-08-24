@@ -1,0 +1,99 @@
+table	column	type	description
+eligible_and_excluded_tables	chrom	string	GRCh38 chromosome or contig name.
+eligible_and_excluded_tables	position	integer	GRCh38 1-based edited genomic position.
+eligible_and_excluded_tables	ref	string	Genomic reference allele.
+eligible_and_excluded_tables	alt	string	Genomic alternate allele.
+eligible_and_excluded_tables	sequence	string	101-nt transcript-oriented sequence centered on the edited cytidine.
+eligible_and_excluded_tables	transcript_strand	string	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	sequence_context	string	Source 101-nt transcript-oriented sequence; identical to sequence.
+eligible_and_excluded_tables	sequence_length	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	center_index	integer	Zero-based nucleotide index 50 in the un-tokenized 101-nt sequence.
+eligible_and_excluded_tables	center_base	string	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	orientation_qc	string	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	transcript_oriented_ref	string	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	transcript_oriented_alt	string	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	corrected_editing_efficiency	number_or_NA	max(treated replicate-rate median - control replicate-rate median, 0).
+eligible_and_excluded_tables	raw_edit_rate_difference	number_or_NA	Treated replicate-rate median minus control replicate-rate median before clipping.
+eligible_and_excluded_tables	training_eligible	boolean_0_or_1	Frozen audit flag; requires at least 2/3 sufficiently covered replicates in each group plus audit QC.
+eligible_and_excluded_tables	label_confidence	string	Frozen audit confidence; high requires 3+3 covered replicates and replicate-consistency thresholds.
+eligible_and_excluded_tables	exclusion_reason	string	Explicit semicolon-delimited reason an audited row is not training eligible.
+eligible_and_excluded_tables	CU517_GC_T1_usable_depth	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T1_ref_count	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T1_alt_count	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T1_raw_edit_rate	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T1_edit_rate	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T1_coverage_status	string	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T2_usable_depth	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T2_ref_count	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T2_alt_count	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T2_raw_edit_rate	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T2_edit_rate	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T2_coverage_status	string	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T3_usable_depth	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T3_ref_count	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T3_alt_count	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T3_raw_edit_rate	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T3_edit_rate	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_T3_coverage_status	string	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C1_usable_depth	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C1_ref_count	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C1_alt_count	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C1_raw_edit_rate	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C1_edit_rate	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C1_coverage_status	string	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C2_usable_depth	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C2_ref_count	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C2_alt_count	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C2_raw_edit_rate	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C2_edit_rate	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C2_coverage_status	string	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C3_usable_depth	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C3_ref_count	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C3_alt_count	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C3_raw_edit_rate	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C3_edit_rate	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	CU517_GC_C3_coverage_status	string	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	treated_median	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	control_median	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	treated_mean	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	control_mean	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	treated_MAD	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	control_MAD	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	treated_range	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	control_range	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	sufficiently_covered_treated_replicates	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	sufficiently_covered_control_replicates	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	pooled_treated_ref_count	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	pooled_treated_alt_count	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	pooled_control_ref_count	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	pooled_control_alt_count	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	fisher_exact_screening_pvalue	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	BH_FDR	number_or_NA	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	passes_FDR_0.05	boolean_0_or_1	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	treated_replicate_consistent	boolean_0_or_1	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	control_replicate_consistent	boolean_0_or_1	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	sufficient_coverage_all_six	boolean_0_or_1	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	elevated_control_background	boolean_0_or_1	Frozen audit flag for control median at or above the documented threshold.
+eligible_and_excluded_tables	source_wgs_variant	string	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	source_catalogue_overlap	string	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	minimum_usable_depth	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	minimum_covered_replicates_per_group	integer	Audited source field retained for reproducibility and label traceability.
+eligible_and_excluded_tables	fisher_limitation	string	Audited source field retained for reproducibility and label traceability.
+CU5.17_lamar_splits.tsv.gz	allele_key	string	Exact GRCh38 genomic allele key chrom:position:ref:alt.
+CU5.17_lamar_splits.tsv.gz	chrom	string	GRCh38 chromosome or contig name.
+CU5.17_lamar_splits.tsv.gz	position	integer	GRCh38 1-based edited genomic position.
+CU5.17_lamar_splits.tsv.gz	ref	string	Genomic reference allele.
+CU5.17_lamar_splits.tsv.gz	alt	string	Genomic alternate allele.
+CU5.17_lamar_splits.tsv.gz	sequence	string	101-nt transcript-oriented sequence centered on the edited cytidine.
+CU5.17_lamar_splits.tsv.gz	center_index	integer	Zero-based nucleotide index 50 in the un-tokenized 101-nt sequence.
+CU5.17_lamar_splits.tsv.gz	corrected_editing_efficiency	number_or_NA	max(treated replicate-rate median - control replicate-rate median, 0).
+CU5.17_lamar_splits.tsv.gz	split	string	Leakage-resistant train, validation, or test assignment.
+CU5.17_lamar_splits.tsv.gz	overlap_cluster_id	string	Merged same-chromosome cluster of overlapping position±50 intervals.
+CU5.17_lamar_splits.tsv.gz	duplicate_sequence_group_id	string	Group identifier shared by exactly identical 101-nt sequences.
+CU5.17_lamar_splits.tsv.gz	label_confidence	string	Frozen audit confidence; high requires 3+3 covered replicates and replicate-consistency thresholds.
+CU5.17_lamar_splits.tsv.gz	label_class	string	zero if corrected target is 0; positive otherwise.
+CU5.17_lamar_splits.tsv.gz	training_eligible	boolean_0_or_1	Frozen audit flag; requires at least 2/3 sufficiently covered replicates in each group plus audit QC.
+CU5.17_lamar_splits.tsv.gz	elevated_control_background	boolean_0_or_1	Frozen audit flag for control median at or above the documented threshold.
+CU5.17_lamar_splits.tsv.gz	raw_edit_rate_difference	number_or_NA	Treated replicate-rate median minus control replicate-rate median before clipping.
+CU5.17_lamar_splits.tsv.gz	control_median	number_or_NA	Audited source field retained for reproducibility and label traceability.
+CU5.17_lamar_splits.tsv.gz	treated_median	number_or_NA	Audited source field retained for reproducibility and label traceability.

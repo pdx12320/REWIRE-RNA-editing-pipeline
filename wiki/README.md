@@ -144,6 +144,11 @@ The strongest supported conclusion is that the workflow constructed sequence-lin
 
 It does not establish that every computational positive is experimentally editable. It also does not establish that every strict computational negative is biologically impossible to edit. Prospective PUF–APOBEC experiments remain necessary.
 
+The broad 9,930-site matrix is derived from called candidate sites rather than a
+complete transcriptome-wide negative universe. Sequence-matched, sufficiently
+covered uncalled cytidines remain a future improvement. Computational QC and
+leakage-safe splitting do not constitute experimental or biological validation.
+
 ## Reproducibility
 
 - [Current binary label specification](../pipeline/LAMAR_BINARY_LABEL_DESIGN.md)
