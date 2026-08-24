@@ -1,0 +1,15 @@
+{
+  "figure": "figure1_current_binary_label_design.svg",
+  "purpose": "Method diagram for the current LAMAR binary label design",
+  "source_repository": "https://github.com/pdx12320/PUF_fine_tuning_version1",
+  "source_commit": "77a2a02",
+  "source_dataset_run": "run_20260721T231520Z",
+  "counts": {
+    "computational_positive_main": 1513,
+    "computational_positive_high_confidence": 1457,
+    "strict_computational_negative": 2821734
+  },
+  "encoding": "Equal-width evidence paths; box area does not encode site count",
+  "mappability": "NA_RESOURCE_MISSING",
+  "scientific_boundary": "Computational labels are not experimentally validated editable or non-editable sites"
+}

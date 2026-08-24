@@ -1,5 +1,7 @@
 # Model 1 to Model 2: LAMAR training-label generation
 
+> **Status:** This document describes the earlier continuous-label route. The adopted binary computational-positive and strict computational-negative mechanism is documented in [LAMAR binary label design](LAMAR_BINARY_LABEL_DESIGN.md).
+
 For the production route with complete input manifests, T1 preprocessing audit,
 safe checkpoint recovery, direct `samtools mpileup` validation and atomic run
 publication, see [Audited Lamar background correction](LAMAR_BACKGROUND_CORRECTION.md).
