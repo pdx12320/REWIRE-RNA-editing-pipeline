@@ -1,143 +1,59 @@
-# REWIRE RNA-editing evidence pipeline
+# REWIRE RNA-editing pipeline
 
-ORCA is a programmable PUF–APOBEC RNA-editing system. This repository documents how six RNA-seq libraries were converted into auditable sequence-level labels for LAMAR candidate prioritization.
+Current workflow: transfected human HEK293T RNA-seq, adapter trimming, GRCh38 plus GTF alignment, quality-filtered editing evidence, three-control background filtering, and six-editor comparison. This is a **positive-only computational screening workflow**, not the historical CU5.17 positive/negative training dataset.
 
-The current binary dataset does not define negatives as sites omitted by an editing caller. It directly measures expressed transcript cytosines and requires complete six-sample evidence before assigning a strict computational-negative label.
+## Current study
 
-![Current computational-positive and strict computational-negative label design](wiki/assets/figure1_current_binary_label_design.svg)
+Six treatments: PUF10, PUF12, 132D, E72A, GVE and SNE; four biological replicates each. Controls: mock/Control, APOBEC-only and PUF-only; four replicates each. Total: 36 libraries. Raw sample identifiers may retain `GVD`; report labels use **GVE**.
 
-## Current model-facing dataset
+- BQ >30 and MAPQ >30 mean integer thresholds **31**.
+- Initial positive screen: four treated replicates each ALT >=5, AF >=0.005; coverage >=20 in every sample of the declared analysis universe.
+- Final exported sites and off-target figures: **each of the four treated replicates ALT >=20 and depth >=100**.
+- Editing rate: **median of four replicate ALT/(REF+ALT) rates**, not pooled ALT divided by pooled depth.
+- No 10% editing-rate or 10-percentage-point increase cutoff.
+- No negative class is generated.
 
-| Label population | Sites | Interpretation |
-|---|---:|---|
-| Computational positives | **1,513** | Corrected editing efficiency greater than 0.10 after coverage, control-background, sequence, complexity, and WGS checks |
-| High-confidence positive audit subset | **1,457** | Main positives with complete six-sample coverage and stronger replicate-consistency criteria |
-| Strict computational negatives | **2,821,734** | Expressed exon C sites with depth at least 20 and zero target-ALT reads in all six samples |
+## Workflow
 
-Every model sequence is transcript-oriented, contains 101 nucleotides, and has C at zero-based index 50. Coverage and annotation were used to construct and audit labels, not as default model inputs.
+```mermaid
+flowchart TD
+    raw["Paired FASTQ and manifest"] --> trim["Adapter trimming and QC"]
+    trim --> align["Human GRCh38 plus GTF"]
+    align --> bam["STAR and GATK preprocessing"]
+    bam --> call["REDItools candidate calling"]
+    call --> recount["BQ31 MAPQ31 NH1 recount"]
+    recount --> universe{"Analysis scope"}
+    universe -->|"PUF12 priority"| sixteen["16 sample coverage"]
+    universe -->|"Six editor comparison"| thirtySix["36 sample coverage"]
+    sixteen --> filter["SNP and background filters"]
+    thirtySix --> filter
+    filter --> positive["Four replicate positive screen"]
+    positive --> finalSites["Each replicate ALT20 depth100"]
+    finalSites --> export["Tables and separate figures"]
+```
 
-## Evidence design
+See [complete workflow and screening rules](pipeline/CURRENT_HEK293T_WORKFLOW.md), [machine-readable settings](pipeline/config/current_hek293t.json), and [pipeline entry point](pipeline/README.md).
 
-- The same pileup implementation was used for positive and negative recounting.
-- Computational positives required coverage in at least two treated and two control replicates, corrected efficiency above 0.10, and control median at most 0.02.
-- Strict computational negatives required usable depth of at least 20 and target-ALT count equal to zero in every treated and control replicate.
-- Both classes excluded central WGS variants, invalid sequence orientation, incomplete windows, ambiguous centers, and low-complexity contexts.
-- All original broad candidates and all positive definitions were excluded from the strict negative universe.
-- Gene, genomic-center, overlapping-window, and exact-sequence relations were grouped before splitting.
+## Export the final subset
 
-The detailed frozen specification is available in [LAMAR binary label design](pipeline/LAMAR_BINARY_LABEL_DESIGN.md).
-
-## Legacy screening analysis
-
-The earlier called-site screening funnel is no longer presented as the model-facing dataset. It did not construct a transcriptome-wide, fully depth-qualified negative class.
-
-The legacy screening counts remain in [results](results/README.md) and the [DBTL record](dbtl/README.md) for historical audit and reproducibility. They must not be interpreted as the current positive-to-negative label pipeline.
-
-## Model interface
-
-The current binary route measures quality-filtered A, C, G, and T counts in all six MarkDuplicates BAMs. It preserves replicate-level depth and target-ALT evidence, then extracts a 101-nucleotide transcript-oriented sequence.
-
-See [LAMAR training-label generation](pipeline/LAMAR_TRAINING_LABELS.md) for the legacy continuous-label route and [audited background correction](pipeline/LAMAR_BACKGROUND_CORRECTION.md) for its frozen QC record.
-
-## Model teammate quick start
-
-The handoff builder is stdlib-only. The optional baseline environment adds
-scikit-learn and uses Python 3.12; CI also tests the repository on Python 3.11.
+The following **postprocessing command does not perform alignment, calling or background filtering**. Its inputs must already be background/SNP-filtered positives and their quality-filtered replicate counts.
 
 ```bash
-conda env create -f pipeline/env/lamar_scalar_baseline.yml
-conda activate rewire_lamar_scalar
-
-python -m unittest discover -s tests -p "test_*.py" -v
-
-# Inspect the committed production split QC embedded in the manifest.
-python -m json.tool data/processed/handoff_manifest.json
-
-# Run directly on the committed recommended-primary split assignments.
-python pipeline/scripts/rna/export_lamar_scalar_regression.py \
-  --input data/processed/CU5.17_lamar_splits.tsv.gz \
-  --output /tmp/CU5.17_lamar_scalar_high_confidence.tsv.gz
-
-python examples/train_scalar_baseline.py \
-  --input data/processed/CU5.17_lamar_splits.tsv.gz \
-  --subset high_confidence \
-  --output-json /tmp/CU5.17_scalar_baseline_metrics.json
-
-# Rebuild a full handoff later from the two frozen audit inputs.
-
-LABELS=/path/to/background_corrected_labels.tsv.gz
-METADATA=/path/to/lamar_ready_metadata.tsv.gz
-HANDOFF=/path/to/CU5.17_lamar_finetuning_handoff
-
-python pipeline/scripts/rna/prepare_lamar_finetuning_handoff.py \
-  --labels "$LABELS" \
-  --metadata "$METADATA" \
-  --output-dir "$HANDOFF" \
-  --seed 20260715 \
-  --split-strategy overlap_cluster
-
-python -m json.tool "$HANDOFF/split_qc.json"
-
-python pipeline/scripts/rna/export_lamar_scalar_regression.py \
-  --input "$HANDOFF/CU5.17_lamar_splits.tsv.gz" \
-  --output "$HANDOFF/CU5.17_lamar_scalar_high_confidence.tsv.gz"
-
-python examples/train_scalar_baseline.py \
-  --input "$HANDOFF/CU5.17_lamar_splits.tsv.gz" \
-  --subset high_confidence \
-  --output-json "$HANDOFF/scalar_baseline_metrics.json"
+python3 pipeline/scripts/rna/export_alt20_depth100.py \
+  --positive PUF12_both_positive.tsv \
+  --counts PUF12_positive_replicate_counts.tsv \
+  --samples PUF12_1 PUF12_2 PUF12_3 PUF12_4 \
+  --output PUF12_positive_ALT20_depth100.tsv
 ```
 
-Do not add a random row-level split after export. `center_index=50` is the
-zero-based nucleotide position before tokenization; verify any shift introduced
-by `[CLS]` or other tokenizer special tokens instead of hard-coding model token
-index 51.
+Run the same exporter for each treatment. It preserves all input site columns and adds per-replicate depth, ALT count and rate. It rejects duplicate/incomplete evidence and existing output files.
 
-## Model-facing datasets
+## Interpretation and status
 
-| Dataset or population | Rows | Recommended use |
-|---|---:|---|
-| Broad called-candidate universe | 9,930 | Audited source universe; not a complete transcriptome-wide negative universe. |
-| All training-eligible | 9,428 | Sensitivity analysis; eligibility allows at least 2/3 sufficiently covered replicates per group. |
-| High confidence | 8,540 | **Recommended primary fine-tuning dataset**; requires all 3+3 covered replicates and frozen replicate-consistency thresholds. |
-| High confidence, low control background | 7,351 | Stricter sensitivity analysis. |
-| Zero corrected labels among eligible rows | 1,564 | Keep as valid background-corrected examples; do not delete or relabel. |
-| Final selected candidates | 3,333 | Screening/prioritization subset of the broad matrix; never use as an independent test set against broad-matrix training. |
+The independent PUF12 release uses a 16-sample callable universe (four PUF12 plus twelve controls). The final six-group comparison uses a 36-sample common callable universe. Their counts need not match. Do not combine these as if their denominators were identical.
 
-The broad 9,930-site universe is derived from called candidate sites. A future
-negative-set improvement is to add sequence-matched, sufficiently covered,
-uncalled transcript-oriented cytidines. The current handoff does not invent
-those sites, `puf_target_seq`, `label_total_count`, or non-center token labels.
+The final six-group rerun and figure generation are **in progress as of 2026-09-22**; this documentation is not a claim of completed biological validation. C388 is an apparent T/(C+T) measurement confounded by endogenous reference T. Computational positive sites are not experimentally proven off-target events.
 
-## Repository map
+Historical CU5.17 datasets, scripts, tests and provenance remain available, but are not the current protocol: [binary labels](pipeline/LAMAR_BINARY_LABEL_DESIGN.md), [continuous labels](pipeline/LAMAR_TRAINING_LABELS.md), [historical results](results/README.md), [DBTL](dbtl/README.md).
 
-| Resource | Purpose |
-|---|---|
-| [Dry-lab wiki](wiki/README.md) | Finished workflow, results, contribution and limitations |
-| [DBTL record](dbtl/README.md) | Development cycles plus failure and decision logs |
-| [Pipeline guide](pipeline/README.md) | Reproducible commands |
-| [LAMAR binary label design](pipeline/LAMAR_BINARY_LABEL_DESIGN.md) | Current computational-positive and strict computational-negative specification |
-| [Legacy LAMAR label guide](pipeline/LAMAR_TRAINING_LABELS.md) | Earlier continuous-label construction route |
-| [Catalogue provenance](pipeline/CATALOGUE_PROVENANCE.md) | Source, liftover and quality control |
-| [Outputs](pipeline/OUTPUTS.md) | Expected files |
-| [Troubleshooting](pipeline/TROUBLESHOOTING.md) | Observed errors and fixes |
-| [Legacy result summary](results/README.md) | Frozen historical screening counts |
-
-## DBTL cycles
-
-```text
-1  RNA evidence
-2  public WGS test
-3  catalogue harmonization
-4  final integration
-5  GATK read groups
-6  REDItools2 environment
-7  contigs and coverage
-8  control-depth evidence
-9  legacy compatibility
-10 audit and reporting
-11 LAMAR training labels
-12 audited six-sample background correction
-```
-
-Large sequencing and intermediate files remain outside GitHub. The repository retains scripts, environment definitions, quality-control rules, frozen counts and decision records.
+Raw reads, BAMs, private sample paths, credentials and machine-specific deployment wrappers are not distributed here. Existing legacy runners do not automatically acquire the new settings merely because this specification has changed.
