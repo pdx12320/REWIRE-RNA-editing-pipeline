@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "species": "Homo sapiens",
+  "assembly": "GRCh38",
+  "gtf": "GENCODE v50 primary assembly",
+  "replicates_per_group": 4,
+  "priority_callable_samples": 16,
+  "comparison_callable_samples": 36,
+  "min_baseq": 31,
+  "min_mapq": 31,
+  "require_nh": 1,
+  "calling": {"me": 5, "men": 1},
+  "initial_positive": {"formal_replicates": 4, "min_alt_each": 5, "min_af_each": 0.005, "min_depth_all_included": 20, "max_treated_mad": 0.05},
+  "background": {"groups": ["Control", "APOBEC-only", "PUF-only"], "max_group_median": 0.02, "max_group_mad": 0.02, "max_formal_calls_per_group": 0, "max_editor_only_minus_control": 0.02},
+  "fdr": {"max": 0.05, "method": "BH of maximum one-sided pooled-read Fisher p across three controls per site"},
+  "final_export": {"min_alt_each": 20, "min_depth_each": 100, "replicates_required": 4},
+  "rate": "median of four ALT/(REF+ALT) replicate rates",
+  "min_increase": null,
+  "negative_generation": false,
+  "display_alias": {"GVD": "GVE"},
+  "status": "six-group production run in progress at 2026-09-22"
+}

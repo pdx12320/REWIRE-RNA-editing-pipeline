@@ -1,3 +1,11 @@
+# Pipeline guide
+
+The current HEK293T workflow is documented in [CURRENT_HEK293T_WORKFLOW.md](CURRENT_HEK293T_WORKFLOW.md).
+
+Use BQ31/MAPQ31 and the documented three-control screen, followed by per-replicate ALT20/depth100 final export. The historical runners below are preserved for reproducibility and must not be mistaken for the current 36-sample orchestration.
+
+## Historical CU5.17 implementation
+
 # Pipeline implementation
 
 This document gives the executable workflow. The reasoning, failed tests and DBTL decisions are recorded in [`../docs/ENGINEERING_CYCLE.md`](../docs/ENGINEERING_CYCLE.md).
@@ -313,3 +321,4 @@ retained screening candidates          3,333
 7. Do not describe the legacy retained set as fully depth-qualified.
 
 See [`OUTPUTS.md`](OUTPUTS.md) and [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md).
+

@@ -1,3 +1,9 @@
+# Current RNA-editing workflow
+
+See the [current workflow and Mermaid flowchart](../README.md) and [full filtering specification](../pipeline/CURRENT_HEK293T_WORKFLOW.md). The new HEK293T study is positive-only with four replicates per group; the CU5.17 binary-label dataset below is historical and is not its output.
+
+## Historical CU5.17 binary-label study
+
 # Dry lab: evidence-aware labels for AI-guided RNA editing
 
 > **Takeaway:** We measured both candidate editing and candidate non-editing directly, then used sequence alone to train LAMAR.
@@ -166,3 +172,4 @@ leakage-safe splitting do not constitute experimental or biological validation.
 3. McKenna, A. *et al.* The Genome Analysis Toolkit. *Genome Research* **20**, 1297–1303 (2010).
 4. Picardi, E. and Pesole, G. REDItools. *Bioinformatics* **29**, 1813–1814 (2013).
 5. McLaren, W. *et al.* The Ensembl Variant Effect Predictor. *Genome Biology* **17**, 122 (2016).
+
