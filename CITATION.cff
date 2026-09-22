@@ -9,11 +9,10 @@ authors:
 repository-code: https://github.com/pdx12320/REWIRE-RNA-editing-pipeline
 license: MIT
 abstract: >-
-  A transcriptome-wide RNA-editing screening workflow with audited six-sample
-  background-corrected labels and a leakage-resistant LAMAR scalar-regression
-  handoff.
+  A human HEK293T positive-only RNA-editing screening specification with
+  three-control background filtering and four-replicate final-site export.
 keywords:
   - RNA editing
   - C-to-U editing
-  - LAMAR
   - reproducible bioinformatics
+

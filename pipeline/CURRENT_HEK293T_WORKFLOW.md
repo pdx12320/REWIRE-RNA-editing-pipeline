@@ -1,6 +1,6 @@
 # Current HEK293T positive-only workflow
 
-Specification date: 2026-09-22. This supersedes the historical CU5.17 workflow as the repository entry point. Existing historical scripts/data retain their original semantics.
+Specification date: 2026-09-22.
 
 ## Inputs and reference
 
@@ -75,4 +75,4 @@ Output separate editing-rate distribution (site medians plus C388 marker), C295/
 
 ## What this update distributes
 
-This repository update supplies the current specification, flowchart, settings and a portable final-subset exporter. It does **not** turn historical CU5.17 runners into a newly validated portable 36-sample launcher. Deployment-specific orchestration remains outside the repository until its paths/dependencies are parameterized and integration-tested. No raw sequencing data, new negative set, or final six-group count claim is published.
+This repository update supplies the current specification, flowchart, settings and a portable final-subset exporter. It does **not** provide a validated portable 36-sample launcher. Deployment-specific orchestration remains outside the repository until its paths/dependencies are parameterized and integration-tested. No raw sequencing data, new negative set, or final six-group count claim is published.

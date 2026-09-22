@@ -253,7 +253,7 @@ def main() -> None:
         import pysam
     except ImportError as exc:
         raise SystemExit(
-            "ERROR: pysam is required. Create the environment with pipeline/env/lamar_labels.yml"
+            "ERROR: pysam is required. Create the environment with pipeline/env/rna_counting.yml"
         ) from exc
 
     manifest = read_manifest(args.manifest)
@@ -321,3 +321,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
