@@ -13,12 +13,11 @@
 *.csi
 *.vcf.gz
 
-# Numerical results are not committed while the six-sample analysis is running
+# Analysis results are not committed
 results/**
 !results/**/
 !results/**/README*
 !results/**/ABOUT*
-!results/lamar_background_corrected_qc_summary.tsv
 
 # Runtime folders
 work/
@@ -33,3 +32,4 @@ __pycache__/
 # Editors and OS
 .DS_Store
 *.swp
+

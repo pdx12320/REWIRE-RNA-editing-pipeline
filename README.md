@@ -1,6 +1,6 @@
 # REWIRE RNA-editing pipeline
 
-Current workflow: transfected human HEK293T RNA-seq, adapter trimming, GRCh38 plus GTF alignment, quality-filtered editing evidence, three-control background filtering, and six-editor comparison. This is a **positive-only computational screening workflow**, not the historical CU5.17 positive/negative training dataset.
+Current workflow: transfected human HEK293T RNA-seq, adapter trimming, GRCh38 plus GTF alignment, quality-filtered editing evidence, three-control background filtering, and six-editor comparison. This is a **positive-only computational screening workflow**.
 
 ## Current study
 
@@ -54,6 +54,4 @@ The independent PUF12 release uses a 16-sample callable universe (four PUF12 plu
 
 The final six-group rerun and figure generation are **in progress as of 2026-09-22**; this documentation is not a claim of completed biological validation. C388 is an apparent T/(C+T) measurement confounded by endogenous reference T. Computational positive sites are not experimentally proven off-target events.
 
-Historical CU5.17 datasets, scripts, tests and provenance remain available, but are not the current protocol: [binary labels](pipeline/LAMAR_BINARY_LABEL_DESIGN.md), [continuous labels](pipeline/LAMAR_TRAINING_LABELS.md), [historical results](results/README.md), [DBTL](dbtl/README.md).
-
-Raw reads, BAMs, private sample paths, credentials and machine-specific deployment wrappers are not distributed here. Existing legacy runners do not automatically acquire the new settings merely because this specification has changed.
+Raw reads, BAMs, private sample paths, credentials and machine-specific deployment wrappers are not distributed here.
