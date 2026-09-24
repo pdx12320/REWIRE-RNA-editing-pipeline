@@ -48,10 +48,24 @@ python3 pipeline/scripts/rna/export_alt20_depth100.py \
 
 Run the same exporter for each treatment. It preserves all input site columns and adds per-replicate depth, ALT count and rate. It rejects duplicate/incomplete evidence and existing output files.
 
+## Add strand to final positives
+
+```bash
+python3 pipeline/scripts/rna/export_positive_strand.py \
+  --positive PUF12_positive_ALT20_depth100.tsv \
+  --output PUF12_positive_with_strand.tsv
+```
+
+This annotation-only wrapper accepts already transcript-strand-compatible C-to-U positives: genomic `C>T` maps to `strand=+`, and `G>A` maps to `strand=-`. It does not infer gene strand from arbitrary variants or read orientation. Upstream transcript annotation must already have established compatibility.
+
+It preserves coordinates, genomic alleles, editing rates, all other columns, row order and already oriented sequences. If `sequence_101nt` is present, it must contain 101 unambiguous DNA bases with C at index 50; it is **not reverse-complemented again**. Unsupported alleles, duplicate sites, conflicting existing strands and existing output files are rejected. No background filtering or threshold changes are performed.
+
+Run the standard-library tests with `python3 -m unittest discover -s tests -v`.
+
 ## Interpretation and status
 
 The independent PUF12 release uses a 16-sample callable universe (four PUF12 plus twelve controls). The final six-group comparison uses a 36-sample common callable universe. Their counts need not match. Do not combine these as if their denominators were identical.
 
-The final six-group rerun and figure generation are **in progress as of 2026-09-22**; this documentation is not a claim of completed biological validation. C388 is an apparent T/(C+T) measurement confounded by endogenous reference T. Computational positive sites are not experimentally proven off-target events.
+The deployed final six-group rerun, background filtering and figure generation completed on **2026-09-24**. This records computational completion, not biological validation or a portable end-to-end reproduction test. C388 is an apparent T/(C+T) measurement confounded by endogenous reference T. Computational positive sites are not experimentally proven off-target events. Result tables and figures are not included in this code update.
 
 Raw reads, BAMs, private sample paths, credentials and machine-specific deployment wrappers are not distributed here.
