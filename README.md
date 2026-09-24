@@ -66,6 +66,18 @@ Run the standard-library tests with `python3 -m unittest discover -s tests -v`.
 
 The independent PUF12 release uses a 16-sample callable universe (four PUF12 plus twelve controls). The final six-group comparison uses a 36-sample common callable universe. Their counts need not match. Do not combine these as if their denominators were identical.
 
+### Fixed-reference chromosome-normalized figure
+
+The iGEM chromosome-distribution figure uses the previously audited **PUF12 16-sample reference of 899,942 eligible C sites** as a fixed denominator for all six editors. For editor `g` and chromosome `c`, let `P[g,c]` be the number of its final, background/SNP-filtered positive sites that intersect this reference, and let `C[c]` be the number of eligible reference C sites on that chromosome. The plotted percentage is:
+
+```text
+rate[g,c] = P[g,c] / C[c]
+normalized_percent[g,c] = 100 * rate[g,c] / sum(rate[g,k] for k with C[k] > 0)
+rate_per_10000_C[g,c] = 10000 * P[g,c] / C[c]
+```
+
+The fixed reference includes zero-ALT C sites and requires BQ >=31, MAPQ >=31, NH=1, depth >=100 in each of four PUF12 replicates, depth >=20 in each of twelve controls, transcript-strand compatibility, exact-allele exclusion against four SNP files, and 101-nt sequence QC. Final positives come from the separate 36-sample six-editor analysis and are intersected with this reference before counting. Each nonempty editor row therefore sums to 100%; this is a **fixed-reference chromosome composition**, not that editor's own callable-C incidence or biological off-target probability. E72A has no final positives and chrY has no eligible reference C sites, so these are `NA`, not zero. The per-10,000-C rate is a separate metric and must not be confused with the plotted percentage.
+
 The deployed final six-group rerun, background filtering and figure generation completed on **2026-09-24**. This records computational completion, not biological validation or a portable end-to-end reproduction test. C388 is an apparent T/(C+T) measurement confounded by endogenous reference T. Computational positive sites are not experimentally proven off-target events. Result tables and figures are not included in this code update.
 
 Raw reads, BAMs, private sample paths, credentials and machine-specific deployment wrappers are not distributed here.
