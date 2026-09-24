@@ -4,6 +4,7 @@ See [current HEK293T workflow](CURRENT_HEK293T_WORKFLOW.md) for the full preproc
 
 ## Distributed tools
 
+- [Positive strand exporter](scripts/rna/export_positive_strand.py): add `+`/`-` transcript/editing strand to already strand-compatible C-to-U positives, preserving existing evidence. See [usage and input preconditions](../README.md#add-strand-to-final-positives). Python standard library only.
 - [Final subset exporter](scripts/rna/export_alt20_depth100.py): export already background/SNP-filtered positives, requiring ALT >=20 and depth >=100 in each of four replicates. See the [usage example](../README.md#export-the-final-subset).
 - [Candidate base counter](scripts/rna/pileup_candidate_base_counts.py): general recount utility. Its defaults are not the current protocol; explicitly provide MAPQ31/BQ31 and audit all other read/count semantics before use. This utility alone does not perform the three-control screen.
 - [Counting environment](env/rna_counting.yml), [catalogue environment](env/genomic_catalogue.yml), and [REDItools Python environment](env/reditools2_py2.yml). These are component environments, not a complete deployment lockfile.

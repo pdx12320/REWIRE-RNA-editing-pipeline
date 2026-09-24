@@ -1,6 +1,6 @@
 # Current HEK293T positive-only workflow
 
-Specification date: 2026-09-22.
+Specification updated: 2026-09-24. Deployed six-group computation and figures completed; biological validation remains separate.
 
 ## Inputs and reference
 
@@ -17,7 +17,9 @@ There are four biological replicates per group. Groups are Control/mock, APOBEC-
 5. REDItools2 candidate discovery uses `-S -me 5 -bq 31 -q 31 -men 1`. **-me is total non-reference support, not target-ALT support.** Keep -men1 because -men5 can reject an entire column when any other substitution has fewer than five reads. Target-ALT >=5 is enforced explicitly in the recount-based screen.
 6. Union calls, VEP annotation and direct candidate recount in every included BAM. Use BQ>=31, MAPQ>=31, NH=1; exclude unmapped, duplicate, secondary, supplementary, QC-failed, deleted/skipped and non-ACGT observations. Retain the pileup overlap behavior and software version in provenance; do not mix count implementations.
 
-This study evaluates APOBEC C-to-U: genomic C>T and reverse-complement G>A, normalized to a 101-nt C-centered sequence (zero-based center 50). A-to-I is not included in these final APOBEC tables. Canonical nuclear chromosomes are chr1–chr22, chrX and chrY.
+This study evaluates APOBEC C-to-U: genomic C>T and reverse-complement G>A, normalized to a 101-nt C-centered sequence (zero-based center 50). A-to-I is not included in these final APOBEC tables. The deployed final chromosome allowlist is 1–22, X, Y and mitochondrial M/MT (with optional chr prefix); mitochondrial contigs are not nuclear chromosomes. This records the existing final-run allowlist, not a new filtering change.
+
+Upstream VEP selection requires genomic C>T to match transcript strand + and G>A to match transcript strand -. The separate `export_positive_strand.py` wrapper makes that existing convention explicit as a `strand` column; it does not establish transcript compatibility itself. A site shared by multiple genes remains a single genomic site, and gene names alone must not be used to guess its strand. Coordinates and REF/ALT remain genomic; the 101-nt context is already transcript-oriented.
 
 ## Quality, SNP and sequence gates
 
@@ -63,7 +65,7 @@ Per-replicate rate is ALT/(REF+ALT). Site `editing_rate` is the median of four r
 
 Use isolated output directories, timestamped logs, command and environment records, lock files and per-stage validated checkpoints. Reuse only completed preprocessing with unchanged parameters. Changed calling/recount thresholds require new outputs, not reuse of old threshold markers. Retain incomplete outputs for inspection.
 
-The deployed resource envelope was two concurrent samples, 24 STAR threads each, 12 MPI ranks per calling sample and eight recount workers. These are resource settings, not universal recommendations; validate memory and disk before choosing concurrency.
+Concurrency varied across deployed stages, including later sharded recounts. The earlier setup used two concurrent samples, 24 STAR threads each, 12 MPI ranks per calling sample and eight recount workers; it is not a complete description of the final recovery run. These are resource settings, not universal recommendations; preserve per-run command logs and validate memory and disk before choosing concurrency.
 
 ## Targets, figures and limitations
 
@@ -75,4 +77,4 @@ Output separate editing-rate distribution (site medians plus C388 marker), C295/
 
 ## What this update distributes
 
-This repository update supplies the current specification, flowchart, settings and a portable final-subset exporter. It does **not** provide a validated portable 36-sample launcher. Deployment-specific orchestration remains outside the repository until its paths/dependencies are parameterized and integration-tested. No raw sequencing data, new negative set, or final six-group count claim is published.
+This repository update supplies the current specification, flowchart, settings, portable final-subset exporter and annotation-only strand exporter with tests. It does **not** provide a validated portable 36-sample launcher. Deployment-specific orchestration remains outside the repository until its paths/dependencies are parameterized and integration-tested. No raw sequencing data, new negative set, result tables or figures are published here.

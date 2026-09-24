@@ -18,5 +18,7 @@
   "min_increase": null,
   "negative_generation": false,
   "display_alias": {"GVD": "GVE"},
-  "status": "six-group production run in progress at 2026-09-22"
+  "positive_strand": {"precondition": "upstream transcript-strand-compatible C-to-U positives", "C>T": "+", "G>A": "-", "coordinates": "genomic, 1-based", "sequence": "already transcript-oriented; C at zero-based index 50"},
+  "canonical_contigs": {"autosomes": "1-22", "sex": ["X", "Y"], "mitochondrial_aliases": ["M", "MT"], "optional_prefix": "chr"},
+  "status": "deployed six-group computation and figures completed 2026-09-24; not biological validation"
 }
