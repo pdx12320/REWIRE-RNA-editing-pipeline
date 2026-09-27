@@ -2,6 +2,14 @@
 
 Current workflow: transfected human HEK293T RNA-seq, adapter trimming, GRCh38 plus GTF alignment, quality-filtered editing evidence, three-control background filtering, and six-editor comparison. This is a **positive-only computational screening workflow**.
 
+## Wiki results and engineering narrative
+
+- [Module 1: results and methods](wiki/01_Module1_Wiki_EN.md)
+- [Design–Build–Test–Learn](wiki/02_Module1_DBTL_EN.md)
+- [Figure sources and supporting data](wiki/README.md)
+
+These pages include the illustrated workflow, original editing-rate distribution, target comparison, sequence logos and chromosome profiles. The distribution retains site-level points and apparent C388 markers; it is not replaced by count or median-summary charts.
+
 ## Current study
 
 Six treatments: PUF10, PUF12, 132D, E72A, GVE and SNE; four biological replicates each. Controls: mock/Control, APOBEC-only and PUF-only; four replicates each. Total: 36 libraries. Raw sample identifiers may retain `GVD`; report labels use **GVE**.
@@ -78,6 +86,6 @@ rate_per_10000_C[g,c] = 10000 * P[g,c] / C[c]
 
 The fixed reference includes zero-ALT C sites and requires BQ >=31, MAPQ >=31, NH=1, depth >=100 in each of four PUF12 replicates, depth >=20 in each of twelve controls, transcript-strand compatibility, exact-allele exclusion against four SNP files, and 101-nt sequence QC. Final positives come from the separate 36-sample six-editor analysis and are intersected with this reference before counting. Each nonempty editor row therefore sums to 100%; this is a **fixed-reference chromosome composition**, not that editor's own callable-C incidence or biological off-target probability. E72A has no final positives and chrY has no eligible reference C sites, so these are `NA`, not zero. The per-10,000-C rate is a separate metric and must not be confused with the plotted percentage.
 
-The deployed final six-group rerun, background filtering and figure generation completed on **2026-09-24**. This records computational completion, not biological validation or a portable end-to-end reproduction test. C388 is an apparent T/(C+T) measurement confounded by endogenous reference T. Computational positive sites are not experimentally proven off-target events. Result tables and figures are not included in this code update.
+The deployed final six-group rerun, background filtering and figure generation completed on **2026-09-24**. This records computational completion, not biological validation or a portable end-to-end reproduction test. C388 is an apparent T/(C+T) measurement confounded by endogenous reference T. Computational positive sites are not experimentally proven off-target events. The Wiki pages now include figures and supporting summary tables. Raw reads and BAMs remain excluded; these documentation assets do not provide a complete end-to-end reproduction package.
 
 Raw reads, BAMs, private sample paths, credentials and machine-specific deployment wrappers are not distributed here.
